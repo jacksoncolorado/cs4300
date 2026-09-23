@@ -12,10 +12,9 @@ def classify_number(number):
 
 
 # function to confirm if number is prime (True, False otherwise)
-# prim is only divisible eby 1 and itself
+# prime is only divisible eby 1 and itself
 # for loop
 def is_prime(number):
-    # only prime even!
     if number < 2:
         return False
     # check divisors up to the square root → **0.5
@@ -46,7 +45,7 @@ def sum_to(limit=100):
     current = 1
     while current <= limit:
         total += current # append new sum
-        current += 1.  # increment
+        current += 1  # increment
     return total
 
 

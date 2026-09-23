@@ -8,7 +8,7 @@ def add_integers(a, b):
 def divide(a, b):
     return a / b
 
-# making a strong uppercased
+# making a string uppercased
 def caps(text):
     return text.upper() + "!"
 

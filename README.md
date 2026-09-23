@@ -2,7 +2,7 @@
 # ------------------------------------------------------------------------
 # homework 1
 
-This is an reintroduction to python and unit testing. 
+This is an introduction to python and unit testing. 
 seven tasks covering:  data types, control structures, duck typing, 
 lists and dictionaries, file handling, and package management, each with pytest test cases.
 

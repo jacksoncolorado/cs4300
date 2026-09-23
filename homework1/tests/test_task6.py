@@ -3,7 +3,7 @@ import pytest
 from task6 import count_words
 
 # paramaterized tests.. 
-# extra whitespace/line/tab should raise count
+# extra whitespace/line/tab shouldn't raise count
 @pytest.mark.parametrize(
     "text, expected",
     [
