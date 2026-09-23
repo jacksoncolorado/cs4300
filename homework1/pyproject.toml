@@ -1,0 +1,8 @@
+# config file read automatically by pytest when it runs from this directory
+[tool.pytest.ini_options]
+
+# add the src/ folder to Python's import path before tests run
+pythonpath = ["src"]
+
+# tells pytest to only look inside tests/ when collecting test files
+testpaths = ["tests"]
