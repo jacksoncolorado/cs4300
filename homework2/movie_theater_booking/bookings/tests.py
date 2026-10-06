@@ -219,3 +219,16 @@ class MovieViewTests(TestCase):
             '<button class="btn btn-primary" disabled>Book Now</button>',
             html=True,
         )
+
+    def test_movie_list_shows_release_date_and_duration(self):
+        Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+
+        response = self.client.get("/")
+
+        self.assertContains(response, "October 22, 2021")
+        self.assertContains(response, "155 minutes")

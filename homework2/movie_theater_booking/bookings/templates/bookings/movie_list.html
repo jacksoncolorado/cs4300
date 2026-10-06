@@ -11,6 +11,10 @@
                 <div class="card-body">
                     <h2 class="card-title h4">{{ movie.title }}</h2>
                     <p class="card-text">{{ movie.description }}</p>
+                    <p class="card-text">
+                        <strong>Release date:</strong> {{ movie.release_date|date:"F j, Y" }}<br>
+                        <strong>Duration:</strong> {{ movie.duration }} minutes
+                    </p>
                     <button class="btn btn-primary" disabled>Book Now</button>
                 </div>
             </article>
