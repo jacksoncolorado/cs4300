@@ -183,3 +183,16 @@ class MovieAPITests(APITestCase):
         self.assertEqual(patch_response.json()["title"], "Dune: Part Two — Extended")
         movie.refresh_from_db()
         self.assertEqual(movie.title, "Dune: Part Two — Extended")
+
+    def test_delete_movie(self):
+        movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+
+        response = self.client.delete(f"/api/movies/{movie.id}/")
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Movie.objects.filter(id=movie.id).exists())

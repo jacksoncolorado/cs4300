@@ -18,7 +18,7 @@
 - [x] **T7** — `GET /api/movies/<id>/` · test: `test_retrieve_movie` · covers: AC-8
 - [x] **T8** — Missing movie → 404 · test: `test_get_missing_movie_404` · covers: AC-8
 - [x] **T9** — `PUT`/`PATCH /api/movies/<id>/` · test: `test_update_movie` · covers: AC-7
-- [ ] **T10** — `DELETE /api/movies/<id>/` · test: `test_delete_movie` · covers: AC-7
+- [x] **T10** — `DELETE /api/movies/<id>/` · test: `test_delete_movie` · covers: AC-7
 - [ ] **T11** — `base.html` (Bootstrap + navbar) + `movie_list` view/template (disabled "Book Now") · test: `test_movie_list_uses_base_template` · covers: AC-9
 - [ ] **T12** — Show release date and duration · test: `test_movie_list_shows_release_date_and_duration` · covers: AC-3
 - [ ] **T13** — Empty state · test: `test_movie_list_empty_state` · covers: AC-2
