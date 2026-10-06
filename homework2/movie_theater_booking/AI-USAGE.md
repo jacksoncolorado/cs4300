@@ -7,12 +7,10 @@ Keep this log as you go, then copy the summary into your README.
 > 📖 **Book:** "Record where you used AI and how you verified it", [§13.2.10](https://www.swebook.org/chapters/13-ai-across-the-lifecycle/index.html#13210-the-team-project-appendix-a).
 
 ## Summary (paste into README)
-- **Tool:** Codex (UCCS), model: <model>
-- **Used for:** <e.g., reviewing my specs, drafting plans, test-first implementation of tasks>
-- **How I used the output:** <e.g., I wrote all specs; I reviewed and edited every plan; I read,
-  ran and committed each task's code myself; I rewrote X by hand>
+- **Tool:** Codex (Personal, model: GPT-5.6 Sol low 
+- **Used for:** Test-first implementation of the tasks in specs/001-movie-listings/tasks.md, one task at a time
+- **How I used the output:** I read every diff and ran the test suite myself before committing each task. I wrote the commit messages, decided when a change was in scope, and applied the migration to my dev database when the page broke.
 
 ## Log
 | Date | Feature / task | What I asked Codex | What I kept, changed or rejected |
-|---|---|---|---|
-|  |  |  |  |
+| 2026-10-06 | 001 movie listings, T1–T15 | Implement each task from tasks.md test-first, one at a time | Kept all generated code; verified each diff and test run myself |
