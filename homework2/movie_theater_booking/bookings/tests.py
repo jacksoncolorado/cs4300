@@ -84,3 +84,16 @@ class MovieAPITests(APITestCase):
         list_response = self.client.get("/api/movies/")
         self.assertEqual(list_response.status_code, status.HTTP_200_OK)
         self.assertEqual(list_response.json(), [{"id": movie.id, **movie_data}])
+
+    def test_create_movie_missing_title_400(self):
+        movie_data = {
+            "description": "A widower travels to South America in his house.",
+            "release_date": "2009-05-29",
+            "duration": 96,
+        }
+
+        response = self.client.post("/api/movies/", movie_data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("title", response.json())
+        self.assertFalse(Movie.objects.exists())
