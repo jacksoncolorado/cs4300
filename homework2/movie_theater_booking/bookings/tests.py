@@ -196,3 +196,26 @@ class MovieAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Movie.objects.filter(id=movie.id).exists())
+
+
+class MovieViewTests(TestCase):
+    def test_movie_list_uses_base_template(self):
+        Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "bookings/movie_list.html")
+        self.assertTemplateUsed(response, "bookings/base.html")
+        self.assertContains(response, "cdn.jsdelivr.net/npm/bootstrap")
+        self.assertContains(response, '<a class="navbar-brand" href="/">Movies</a>')
+        self.assertContains(
+            response,
+            '<button class="btn btn-primary" disabled>Book Now</button>',
+            html=True,
+        )

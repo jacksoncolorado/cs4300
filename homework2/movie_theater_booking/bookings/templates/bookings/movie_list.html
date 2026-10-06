@@ -1,0 +1,20 @@
+{% extends "bookings/base.html" %}
+
+{% block title %}Movies | Movie Theater Booking{% endblock %}
+
+{% block content %}
+<h1>Movies</h1>
+<div class="row g-4">
+    {% for movie in movies %}
+        <div class="col-md-6">
+            <article class="card h-100">
+                <div class="card-body">
+                    <h2 class="card-title h4">{{ movie.title }}</h2>
+                    <p class="card-text">{{ movie.description }}</p>
+                    <button class="btn btn-primary" disabled>Book Now</button>
+                </div>
+            </article>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}
