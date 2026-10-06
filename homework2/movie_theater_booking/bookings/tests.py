@@ -110,3 +110,17 @@ class MovieAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("release_date", response.json())
         self.assertFalse(Movie.objects.exists())
+
+    def test_create_movie_zero_duration_400(self):
+        movie_data = {
+            "title": "Up",
+            "description": "A widower travels to South America in his house.",
+            "release_date": "2009-05-29",
+            "duration": 0,
+        }
+
+        response = self.client.post("/api/movies/", movie_data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("duration", response.json())
+        self.assertFalse(Movie.objects.exists())
