@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-d+*v_r=da3frro=)o)s-))0odti7mf8h=(*wbidgvtqkz=oikl
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -37,6 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    "rest_framework",
+    "behave_django",
+    "bookings",
 ]
 
 MIDDLEWARE = [
@@ -115,6 +118,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 
 # Email

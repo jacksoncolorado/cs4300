@@ -1,0 +1,17 @@
+asgiref==3.12.1
+beautifulsoup4==4.15.0
+behave==1.3.3
+behave-django==2.0.0
+colorama==0.4.6
+coverage==7.16.2
+cucumber-expressions==20.1.0
+cucumber-tag-expressions==11.0.1
+Django>=5.2,<7
+djangorestframework==3.18.1
+parse==1.22.2
+parse_type==0.6.6
+six==1.17.0
+soupsieve==2.10
+sqlparse==0.6.0
+typing_extensions==4.16.0
+gunicorn
