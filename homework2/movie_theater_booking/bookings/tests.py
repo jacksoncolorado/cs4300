@@ -151,3 +151,35 @@ class MovieAPITests(APITestCase):
         response = self.client.get("/api/movies/9999/")
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_movie(self):
+        movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+        url = f"/api/movies/{movie.id}/"
+        replacement_data = {
+            "title": "Dune: Part Two",
+            "description": "Paul Atreides unites with Chani and the Fremen.",
+            "release_date": "2024-03-01",
+            "duration": 166,
+        }
+
+        put_response = self.client.put(url, replacement_data, format="json")
+
+        self.assertEqual(put_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(put_response.json(), {"id": movie.id, **replacement_data})
+        movie.refresh_from_db()
+        self.assertEqual(movie.title, "Dune: Part Two")
+        self.assertEqual(movie.duration, 166)
+
+        patch_response = self.client.patch(
+            url, {"title": "Dune: Part Two — Extended"}, format="json"
+        )
+
+        self.assertEqual(patch_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(patch_response.json()["title"], "Dune: Part Two — Extended")
+        movie.refresh_from_db()
+        self.assertEqual(movie.title, "Dune: Part Two — Extended")
