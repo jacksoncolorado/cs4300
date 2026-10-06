@@ -61,3 +61,26 @@ class MovieAPITests(APITestCase):
                 },
             ],
         )
+
+    def test_create_movie(self):
+        movie_data = {
+            "title": "Up",
+            "description": "A widower travels to South America in his house.",
+            "release_date": "2009-05-29",
+            "duration": 96,
+        }
+
+        create_response = self.client.post(
+            "/api/movies/", movie_data, format="json"
+        )
+
+        self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
+        movie = Movie.objects.get()
+        self.assertEqual(
+            create_response.json(),
+            {"id": movie.id, **movie_data},
+        )
+
+        list_response = self.client.get("/api/movies/")
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(list_response.json(), [{"id": movie.id, **movie_data}])

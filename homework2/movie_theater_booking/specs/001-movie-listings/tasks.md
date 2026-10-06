@@ -11,7 +11,7 @@
 
 - [x] **T1** — `Movie` model + migration + `__str__` + ordering · test: `test_movie_str_and_ordering` · covers: Data
 - [x] **T2** — `MovieSerializer` + `MovieViewSet` + router; `GET /api/movies/` · test: `test_list_movies` · covers: AC-4
-- [ ] **T3** — `POST /api/movies/` · test: `test_create_movie` · covers: AC-5
+- [x] **T3** — `POST /api/movies/` · test: `test_create_movie` · covers: AC-5
 - [ ] **T4** — Validation: missing title → 400 · test: `test_create_movie_missing_title_400` · covers: AC-6
 - [ ] **T5** — Validation: missing release date → 400 · test: `test_create_movie_missing_release_date_400` · covers: AC-6
 - [ ] **T6** — Validation: duration ≤ 0 → 400 · test: `test_create_movie_zero_duration_400` · covers: AC-6
