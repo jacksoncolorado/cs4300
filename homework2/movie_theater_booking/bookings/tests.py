@@ -232,3 +232,9 @@ class MovieViewTests(TestCase):
 
         self.assertContains(response, "October 22, 2021")
         self.assertContains(response, "155 minutes")
+
+    def test_movie_list_empty_state(self):
+        response = self.client.get("/")
+
+        self.assertContains(response, "No movies are showing right now")
+        self.assertNotContains(response, "Book Now")

@@ -19,6 +19,10 @@
                 </div>
             </article>
         </div>
+    {% empty %}
+        <div class="col-12">
+            <p class="alert alert-info">No movies are showing right now</p>
+        </div>
     {% endfor %}
 </div>
 {% endblock %}

@@ -21,7 +21,7 @@
 - [x] **T10** — `DELETE /api/movies/<id>/` · test: `test_delete_movie` · covers: AC-7
 - [x] **T11** — `base.html` (Bootstrap + navbar) + `movie_list` view/template (disabled "Book Now") · test: `test_movie_list_uses_base_template` · covers: AC-9
 - [x] **T12** — Show release date and duration · test: `test_movie_list_shows_release_date_and_duration` · covers: AC-3
-- [ ] **T13** — Empty state · test: `test_movie_list_empty_state` · covers: AC-2
+- [x] **T13** — Empty state · test: `test_movie_list_empty_state` · covers: AC-2
 - [ ] **T14** — behave-django setup (`behave_django` in `INSTALLED_APPS`) + scenario "Browse the movie list" · covers: AC-1
 - [ ] **T15** — Scenario "No movies showing" · covers: AC-2
 
