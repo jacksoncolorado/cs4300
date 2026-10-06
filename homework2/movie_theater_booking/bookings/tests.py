@@ -1,4 +1,9 @@
-from django.test import TestCase
+import importlib
+import os
+import subprocess
+import sys
+
+from django.test import SimpleTestCase, TestCase
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -6,6 +11,9 @@ from .models import Movie
 
 
 class MovieModelTests(TestCase):
+    def setUp(self):
+        Movie.objects.all().delete()
+
     def test_movie_str_and_ordering(self):
         older_movie = Movie.objects.create(
             title="Dune",
@@ -25,6 +33,9 @@ class MovieModelTests(TestCase):
 
 
 class MovieAPITests(APITestCase):
+    def setUp(self):
+        Movie.objects.all().delete()
+
     def test_list_movies(self):
         older_movie = Movie.objects.create(
             title="Dune",
@@ -199,6 +210,9 @@ class MovieAPITests(APITestCase):
 
 
 class MovieViewTests(TestCase):
+    def setUp(self):
+        Movie.objects.all().delete()
+
     def test_movie_list_uses_base_template(self):
         Movie.objects.create(
             title="Dune",
@@ -238,3 +252,56 @@ class MovieViewTests(TestCase):
 
         self.assertContains(response, "No movies are showing right now")
         self.assertNotContains(response, "Book Now")
+
+
+class DeploymentSettingsTests(SimpleTestCase):
+    def test_settings_use_environment_and_whitenoise(self):
+        environment = os.environ.copy()
+        environment["SECRET_KEY"] = "deployment-test-secret"
+        environment["DEBUG"] = "True"
+        enabled = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "from movie_theater_booking.settings import "
+                    "DEBUG, MIDDLEWARE, SECRET_KEY; "
+                    "assert SECRET_KEY == 'deployment-test-secret'; "
+                    "assert DEBUG is True; "
+                    "assert MIDDLEWARE[1] == "
+                    "'whitenoise.middleware.WhiteNoiseMiddleware'"
+                ),
+            ],
+            env=environment,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(enabled.returncode, 0, enabled.stderr)
+
+        environment.pop("DEBUG")
+        disabled = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "from movie_theater_booking.settings import DEBUG; assert DEBUG is False",
+            ],
+            env=environment,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(disabled.returncode, 0, disabled.stderr)
+
+
+class SampleMovieMigrationTests(TestCase):
+    def test_seed_sample_movies_is_idempotent(self):
+        Movie.objects.all().delete()
+        migration = importlib.import_module("bookings.migrations.0002_seed_movies")
+
+        migration.seed_sample_movies(importlib.import_module("django.apps").apps, None)
+        migration.seed_sample_movies(importlib.import_module("django.apps").apps, None)
+
+        self.assertEqual(Movie.objects.count(), 3)
+        self.assertEqual(
+            set(Movie.objects.values_list("title", flat=True)),
+            {"Dune", "Up", "The Matrix"},
+        )

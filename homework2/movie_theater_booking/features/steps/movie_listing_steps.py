@@ -8,6 +8,7 @@ from bookings.models import Movie
 def create_movies(context, first_title, second_title):
     """Create the two movies used by the browsing scenario."""
 
+    Movie.objects.all().delete()
     movie_details = {
         "Dune": {
             "description": "A noble family becomes embroiled in a war.",
@@ -28,9 +29,9 @@ def create_movies(context, first_title, second_title):
 
 @given("no movies exist")
 def no_movies_exist(context):
-    """Confirm the scenario starts with an empty movie catalog."""
+    """Establish an empty movie catalog for the scenario."""
 
-    assert not Movie.objects.exists()
+    Movie.objects.all().delete()
 
 
 @when("I open the movie list page")
