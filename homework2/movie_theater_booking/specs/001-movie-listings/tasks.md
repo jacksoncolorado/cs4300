@@ -15,7 +15,7 @@
 - [x] **T4** — Validation: missing title → 400 · test: `test_create_movie_missing_title_400` · covers: AC-6
 - [x] **T5** — Validation: missing release date → 400 · test: `test_create_movie_missing_release_date_400` · covers: AC-6
 - [x] **T6** — Validation: duration ≤ 0 → 400 · test: `test_create_movie_zero_duration_400` · covers: AC-6
-- [ ] **T7** — `GET /api/movies/<id>/` · test: `test_retrieve_movie` · covers: AC-8
+- [x] **T7** — `GET /api/movies/<id>/` · test: `test_retrieve_movie` · covers: AC-8
 - [ ] **T8** — Missing movie → 404 · test: `test_get_missing_movie_404` · covers: AC-8
 - [ ] **T9** — `PUT`/`PATCH /api/movies/<id>/` · test: `test_update_movie` · covers: AC-7
 - [ ] **T10** — `DELETE /api/movies/<id>/` · test: `test_delete_movie` · covers: AC-7
