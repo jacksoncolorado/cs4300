@@ -146,3 +146,8 @@ class MovieAPITests(APITestCase):
                 "duration": 155,
             },
         )
+
+    def test_get_missing_movie_404(self):
+        response = self.client.get("/api/movies/9999/")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
