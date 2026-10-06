@@ -1,2 +1,7 @@
 __pycache__/
 .pytest_cache/
+myenv/
+db.sqlite3
+.coverage
+.env
+.DS_Store
