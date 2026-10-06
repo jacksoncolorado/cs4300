@@ -26,6 +26,13 @@ def create_movies(context, first_title, second_title):
     ]
 
 
+@given("no movies exist")
+def no_movies_exist(context):
+    """Confirm the scenario starts with an empty movie catalog."""
+
+    assert not Movie.objects.exists()
+
+
 @when("I open the movie list page")
 def open_movie_list(context):
     """Request the movie listing through Django's test client."""
@@ -51,3 +58,13 @@ def see_movies_with_booking_buttons(context):
         button = card.find("button", string="Book Now")
         assert button is not None
         assert button.has_attr("disabled")
+
+
+@then('I see "{message}" instead of a movie list')
+def see_empty_movie_message(context, message):
+    """Check that an empty catalog renders its user-facing explanation."""
+
+    assert context.response.status_code == 200
+    page = BeautifulSoup(context.response.content, "html.parser")
+    assert message in page.get_text(" ", strip=True)
+    assert not page.select("article.card")

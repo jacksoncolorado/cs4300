@@ -23,10 +23,10 @@
 - [x] **T12** — Show release date and duration · test: `test_movie_list_shows_release_date_and_duration` · covers: AC-3
 - [x] **T13** — Empty state · test: `test_movie_list_empty_state` · covers: AC-2
 - [x] **T14** — behave-django setup (`behave_django` in `INSTALLED_APPS`) + scenario "Browse the movie list" · covers: AC-1
-- [ ] **T15** — Scenario "No movies showing" · covers: AC-2
+- [x] **T15** — Scenario "No movies showing" · covers: AC-2
 
 ## Done when
-- [ ] Every acceptance criterion in `spec.md` has a passing test
-- [ ] `python manage.py test` and `python manage.py behave` pass
-- [ ] Coverage ≥ 80% for `bookings`
+- [x] Every acceptance criterion in `spec.md` has a passing test
+- [x] `python manage.py test` and `python manage.py behave` pass
+- [x] Coverage ≥ 80% for `bookings`
 - [ ] `AI-USAGE.md` updated
