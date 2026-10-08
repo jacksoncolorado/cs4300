@@ -1,10 +1,7 @@
 # Spec: Seat booking
 
-**Status:** Draft: **you finish this spec**
-**Author:** <your name>  **Date:** <YYYY-MM-DD>
-
-> The user stories (US-#) and first acceptance criteria (AC-#) are started for you. Every `TODO` is a decision **you**
-> make. Compare with `001-movie-listings/spec.md` for the level of detail to aim for.
+**Status:** Ready for plan
+**Author:** Jackson McGuire  **Date:** 2026-10-07
 
 ## 1. Problem
 A moviegoer who has picked a movie needs to see which seats are free and reserve one.
@@ -16,7 +13,6 @@ A moviegoer who has picked a movie needs to see which seats are free and reserve
 - **US-2:** As a moviegoer, I want to book an available seat, so that it's reserved for me.
 - **US-3:** As an API client, I want to check seat availability and book seats through `/api/seats/`.
   (HW2 also has `/api/bookings/` create bookings; see AC-6 and feature 003.)
-- TODO: anything else? (For example, can a moviegoer book more than one seat at a time?)
 
 ## 3. Acceptance criteria
 
@@ -29,12 +25,14 @@ A moviegoer who has picked a movie needs to see which seats are free and reserve
 **AC-2 (US-2): Book an available seat**
 - Given I am signed in and seat A1 is available for Dune
 - When I book A1
-- Then TODO: what does the user see, and what changes in the data?
+- Then a Booking is created for me, that movie and that seat, with today's date
+- And I am returned to the seat page for Dune with a success message
+- And A1 now shows as unavailable
 
 **AC-3 (US-2): Seat already taken**
 - Given seat A2 is already booked for Dune
 - When I try to book A2
-- Then TODO: what happens in the UI? What status code does the API return?
+- Then the API returns 400 with a message naming the seat and the movie, the page re-renders with that message and a link back, and no second booking is created
 
 **AC-4 (US-2): No double booking, even at the same moment**
 - Given seat A1 is available for Dune
@@ -63,40 +61,54 @@ A moviegoer who has picked a movie needs to see which seats are free and reserve
 - When it renders
 - Then it extends `base.html`, with the same navbar as the movie list
 
-- TODO **AC-8:** What if the user isn't signed in?
-- TODO **AC-9:** What if the seat or movie doesn't exist?
-- TODO **AC-10+:** API criteria for `/api/seats/`: list, availability, booking.
+**AC-8 (US-2): Not signed in**
+- Given I am not signed in
+- When I open the seat booking page, I am redirected to the login page
+- And when I POST a booking to the API, I get 403 and no booking is created
+
+**AC-9: Seat or movie does not exist**
+- Given no movie with id 9999 and no seat with id 9999 exist
+- When I open the seat page for movie 9999, I get 404
+- And when I POST to /api/seats/book/ naming either id, I get 400 with a field error for that id
+
+**AC-10 (US-3): List seats via API**
+- Given seats A1-A5 exist
+- When a client sends GET /api/seats/ with no movie
+- Then the response is 200 with every seat's id, seat number and booking status
+- (No movie means no availability answer, since availability only exists per (movie, seat). `booking_status` here is the out-of-service flag, not "booked". AC-11 is the per-movie view.)
+
+**AC-11 (US-3): Seat availability for a movie via API**
+- Given seats A1-A5 exist and A2 is booked for Dune
+- When a client sends GET /api/seats/?movie=<Dune's id>
+- Then the response is 200, A2 is marked unavailable, and the rest are available
+
+**AC-12 (US-2): Out-of-service seat**
+- Given seat A3 has booking_status set to out of service
+- When I try to book A3 for any movie
+- Then the API returns 400 saying the seat is out of service, no booking is created, and the page
+  shows A3 as unavailable for every movie
 
 ## 4. Data
 | Thing | Information | Rules |
 |---|---|---|
-| Seat | seat number, booking status | TODO: is the seat number unique? What format? Is booking status stored, or worked out from bookings? (See Open questions.) |
-| Booking | movie, seat, user, booking date | User is always the signed-in user (AC-5). No two bookings of the same seat, enforced by the database (AC-4). TODO: "the same seat" means the same seat, or the same seat *for the same movie*? |
+| Seat | seat number, booking status | Seat number is required and unique, format letter + number (A1-A5). `booking_status` means the seat is out of service entirely, not booked for a movie. |
+| Booking | movie, seat, user, booking date | User is always the signed-in user (AC-5). A UniqueConstraint on (movie, seat) makes the database refuse a duplicate (AC-4). "The same seat" means the same seat for the same movie. |
 
 ## 5. API / UI behavior
 | Action | Input | Success result | Failure result |
 |---|---|---|---|
-| View seats for a movie (page) | movie | TODO | TODO |
-| List seats (API) | TODO | TODO | TODO |
-| Book a seat (API + page) | TODO | TODO | TODO |
+| View seats for a movie (page) | movie id | 200, every seat shown available or unavailable for that movie | 404 if the movie does not exist; redirect to login if not signed in |
+| List seats (API) | optional `movie` query param | 200, seats with availability for that movie when given | — |
+| Book a seat (API + page) | `POST /api/seats/book/` with `{movie, seat}` in the body; user comes from the session | 201 from the API, redirect with a success message from the page | 400 if the seat is taken, out of service, missing or unknown; 403 if not signed in |
 
 ## 6. Out of scope
-- TODO: e.g., payments, seat maps with rows and aisles, holding a seat for 10 minutes
+- Payments, seat maps with rows and aisles, holding a seat temporarily
+- Booking several seats in one request
+- Cancelling a booking
 
-## 7. Open questions
-- [ ] **The assignment's Seat model has no movie field.** Is a seat booked for *every* movie, or
-      is availability per movie? How do the Seat and Booking models together answer that? Decide,
-      and write down why.
-- [ ] **One source of truth for "is this seat taken?"** Seat has a booking status, and Booking
-      also records that the seat is taken. If they disagree (a booking exists but the status says
-      "available"), which one is right? Decide: is the status **stored** on Seat, or **worked out**
-      from bookings each time? A good answer says: (1) whether availability is global or per
-      (movie, seat), (2) which data is the source of truth, (3) if you store the status, every place
-      that must update it (book, cancel, admin, delete) and how you keep them in step, and (4) which
-      AC and test would catch them disagreeing.
-- [ ] **Where does "book a seat" live?** HW2 lets you book through `/api/seats/` *and*
-      `/api/bookings/` (built in 003), and the page books too. All three must follow the same rules
-      (AC-6 here, AC-7 in 003). Decide which one operation they all call. A good answer names the single
-      place the rules (seat free? signed in? who's the user?) live, and why copying them would break AC-6.
-- [ ] Can a booking be cancelled? If so, does that belong in this feature or in 003?
-- [ ] TODO
+## 7. Open Questions
+- [x] **Seat has no movie field.** Availability is per (movie, seat). Seat stays as the assignment specifies and Booking carries the movie, so one set of five seats serves every movie. Putting a movie on Seat would mean duplicating all five seats for every movie.
+- [x] **One source of truth.** Availability is worked out from Booking each time, never stored. A seat is taken for a movie when a Booking exists for that (movie, seat), so there is nothing to keep in step and the two can never disagree. Seat's `booking_status` keeps the field the assignment requires and means out of service. AC-4 and AC-6 would catch a disagreement.
+- [x] **Where booking lives.** One function, `book_seat(user, movie, seat)` in `bookings/services.py`. The page view, SeatViewSet and (in 003) BookingViewSet all call it. Copying the rules into each would let them drift apart and break AC-6.
+- [x] **Cancelling:** out of scope, not in the assignment.
+- [x] **Grader access:** the seed migration creates a demo user whose password comes from the `DEMO_PASSWORD` environment variable. The password is never committed; it is given in the Canvas submission comment, so the repo stays clean even though it is public.
