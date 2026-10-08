@@ -3,10 +3,13 @@ import os
 import subprocess
 import sys
 from datetime import date
+from unittest.mock import patch
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.db import IntegrityError, transaction
 from django.test import SimpleTestCase, TestCase
 from rest_framework import status
@@ -822,6 +825,33 @@ class AuthenticationViewTests(TestCase):
         self.assertTemplateUsed(response, "bookings/base.html")
         self.assertContains(response, "cdn.jsdelivr.net/npm/bootstrap")
         self.assertEqual(settings.LOGIN_REDIRECT_URL, "/")
+
+
+class DemoUserCommandTests(TestCase):
+    def test_seed_demo_user_requires_password(self):
+        with patch.dict(os.environ, {}, clear=True):
+            with self.assertRaisesMessage(
+                CommandError,
+                "DEMO_PASSWORD environment variable is required.",
+            ):
+                call_command("seed_demo_user")
+
+    def test_seed_demo_user_is_idempotent_and_updates_password(self):
+        with patch.dict(os.environ, {"DEMO_PASSWORD": "first-password"}):
+            call_command("seed_demo_user")
+
+        demo_user = get_user_model().objects.get(username="demo")
+        self.assertTrue(demo_user.check_password("first-password"))
+
+        with patch.dict(os.environ, {"DEMO_PASSWORD": "updated-password"}):
+            call_command("seed_demo_user")
+
+        self.assertEqual(
+            get_user_model().objects.filter(username="demo").count(),
+            1,
+        )
+        demo_user.refresh_from_db()
+        self.assertTrue(demo_user.check_password("updated-password"))
 
 
 class DeploymentSettingsTests(SimpleTestCase):

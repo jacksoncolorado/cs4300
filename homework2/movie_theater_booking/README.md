@@ -148,6 +148,16 @@ The whole workflow is §13.5; the rows below point to where each piece is taught
       citation (copy the summary from `AI-USAGE.md`)
 - [ ] Pushed to GitHub, and the zip is submitted in Canvas
 
+### Render build command
+
+Configure `SECRET_KEY` and `DEMO_PASSWORD` as Render environment variables, then use:
+
+```bash
+pip install -r requirements.txt && python manage.py migrate && python manage.py seed_demo_user && python manage.py collectstatic --no-input
+```
+
+The seed command creates or updates the `demo` user without storing its password in the repository.
+
 ---
 
 ## Rules of thumb
