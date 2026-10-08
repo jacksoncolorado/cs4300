@@ -19,7 +19,7 @@
 - [x] **T11** — Seat page shows exact taken/out-of-service states and the movie-specific back link · tests: `test_taken_seat_page_shows_exact_error_and_back_link`, `test_out_of_service_seat_unavailable_for_every_movie` · covers: AC-3, AC-12
 - [x] **T12** — Page and API enforce the same booking rules in both directions · tests: `test_seat_booked_via_page_refused_via_seats_api`, `test_seat_booked_via_seats_api_refused_via_page` · covers: AC-6
 - [x] **T13** — Idempotent `seed_demo_user` command and Render build invocation · tests: `test_seed_demo_user_requires_password`, `test_seed_demo_user_is_idempotent_and_updates_password` · covers: AC-13
-- [ ] **T14** — Behave scenarios “View available seats” and “Book an available seat” · covers: AC-1, AC-2, AC-5
+- [x] **T14** — Behave scenarios “View available seats” and “Book an available seat” · covers: AC-1, AC-2, AC-5
 - [ ] **T15** — Behave scenarios “Seat already taken,” “Sign in to book a seat,” and “Out-of-service seat is unavailable” · covers: AC-3, AC-8, AC-12
 
 ## Done when
