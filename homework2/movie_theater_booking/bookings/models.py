@@ -49,6 +49,7 @@ class Booking(models.Model):
     booking_date = models.DateField(auto_now_add=True)
 
     class Meta:
+        ordering = ("-booking_date", "-id")
         constraints = [
             models.UniqueConstraint(
                 fields=["movie", "seat"],

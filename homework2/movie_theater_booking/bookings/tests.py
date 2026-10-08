@@ -2,7 +2,7 @@ import importlib
 import os
 import subprocess
 import sys
-from datetime import date
+from datetime import date, timedelta
 from unittest.mock import patch
 
 from django.conf import settings
@@ -344,6 +344,45 @@ class BookingModelTests(TestCase):
             )
 
         self.assertEqual(Booking.objects.count(), 1)
+
+    def test_booking_default_ordering_newest_date_then_highest_id(self):
+        oldest_booking = Booking.objects.create(
+            movie=self.movie,
+            seat=self.seat,
+            user=self.user,
+        )
+        second_movie = Movie.objects.create(
+            title="Up",
+            description="A widower travels to South America in his house.",
+            release_date="2009-05-29",
+            duration=96,
+        )
+        second_seat = Seat.objects.create(seat_number="A2")
+        same_day_lower_id = Booking.objects.create(
+            movie=second_movie,
+            seat=second_seat,
+            user=self.user,
+        )
+        third_movie = Movie.objects.create(
+            title="Dune: Part Two",
+            description="Paul Atreides unites with Chani and the Fremen.",
+            release_date="2024-03-01",
+            duration=166,
+        )
+        third_seat = Seat.objects.create(seat_number="A3")
+        same_day_higher_id = Booking.objects.create(
+            movie=third_movie,
+            seat=third_seat,
+            user=self.user,
+        )
+        Booking.objects.filter(pk=oldest_booking.pk).update(
+            booking_date=date.today() - timedelta(days=1)
+        )
+
+        self.assertEqual(
+            list(Booking.objects.all()),
+            [same_day_higher_id, same_day_lower_id, oldest_booking],
+        )
 
 
 class SeatModelTests(TestCase):
