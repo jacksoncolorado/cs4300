@@ -3,11 +3,48 @@ import os
 import subprocess
 import sys
 
+from django.core.exceptions import ValidationError
 from django.test import SimpleTestCase, TestCase
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import Movie
+from .models import Movie, Seat
+
+
+class SeatModelTests(TestCase):
+    def setUp(self):
+        Seat.objects.all().delete()
+
+    def test_seat_str_and_default_booking_status(self):
+        seat = Seat.objects.create(seat_number="A1")
+
+        self.assertEqual(str(seat), "A1")
+        self.assertFalse(seat.booking_status)
+
+    def test_seat_number_validation(self):
+        Seat.objects.create(seat_number="A1")
+
+        for invalid_number in ("a1", "AA1", "A", "1"):
+            with self.subTest(seat_number=invalid_number):
+                with self.assertRaises(ValidationError):
+                    Seat(seat_number=invalid_number).full_clean()
+
+        with self.assertRaises(ValidationError):
+            Seat(seat_number="A1").full_clean()
+
+        Seat(seat_number="Z123").full_clean()
+
+    def test_seed_seats_is_idempotent(self):
+        migration = importlib.import_module("bookings.migrations.0004_seed_seats")
+
+        migration.seed_seats(importlib.import_module("django.apps").apps, None)
+        migration.seed_seats(importlib.import_module("django.apps").apps, None)
+
+        self.assertEqual(Seat.objects.count(), 5)
+        self.assertEqual(
+            set(Seat.objects.values_list("seat_number", flat=True)),
+            {"A1", "A2", "A3", "A4", "A5"},
+        )
 
 
 class MovieModelTests(TestCase):

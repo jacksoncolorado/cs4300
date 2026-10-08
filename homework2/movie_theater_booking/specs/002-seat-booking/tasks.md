@@ -6,7 +6,7 @@
 > identify verification tests that already pass), implement the grouped behavior, then refactor green.
 > Tasks are ordered model → service → API → UI → BDD. Codex ticks the box when its tests pass. **You** commit.
 
-- [ ] **T1** — `Seat` model, validation, schema migration and idempotent A1–A5 seed migration · tests: `test_seat_str_and_default_booking_status`, `test_seat_number_validation`, `test_seed_seats_is_idempotent` · covers: AC-1, AC-10, AC-12
+- [x] **T1** — `Seat` model, validation, schema migration and idempotent A1–A5 seed migration · tests: `test_seat_str_and_default_booking_status`, `test_seat_number_validation`, `test_seed_seats_is_idempotent` · covers: AC-1, AC-10, AC-12
 - [ ] **T2** — `Booking` model, relationships, automatic date and `(movie, seat)` constraint · tests: `test_booking_records_user_movie_seat_and_date`, `test_duplicate_booking_rejected_by_database` · covers: AC-2, AC-4, AC-5
 - [ ] **T3** — Shared atomic `book_seat` service for success, taken seats and out-of-service seats · tests: `test_book_seat_creates_booking`, `test_book_seat_rejects_taken_seat`, `test_book_seat_rejects_out_of_service_seat` · covers: AC-2, AC-3, AC-4, AC-5, AC-6, AC-12
 - [ ] **T4** — Public seat-list API, conditional movie availability and invalid movie-filter error · tests: `test_list_seats_without_movie_omits_available`, `test_list_seats_for_movie_shows_availability`, `test_filter_unknown_movie_returns_field_error` · covers: AC-9, AC-10, AC-11, AC-12
