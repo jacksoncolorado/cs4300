@@ -1,6 +1,6 @@
 # Plan: Movie listings
 
-**Spec:** [spec.md](spec.md)   **Status:** Approved (worked example)
+**Spec:** [spec.md](spec.md)   **Status:** Complete
 
 ## 1. Approach
 One `Movie` model, a `ModelSerializer`, and a Django REST Framework (DRF) `ModelViewSet` registered on a
@@ -55,7 +55,7 @@ Each **Spec ref** names the acceptance criterion (AC-#) in [spec.md](spec.md) th
 | AC-3 | view test | `test_movie_list_shows_release_date_and_duration` |
 | AC-4 | API | `test_list_movies` |
 | AC-5 | API | `test_create_movie` |
-| AC-6 | API | `test_create_movie_missing_title_400`, `test_create_movie_missing_release_date_400`, `test_create_movie_zero_duration_400` |
+| AC-6 | API | `test_create_movie_missing_title_400`, `test_create_movie_missing_release_date_400`, `test_create_movie_zero_duration_400`, `test_create_movie_negative_duration_400` |
 | AC-7 | API | `test_update_movie`, `test_delete_movie` |
 | AC-8 | API | `test_retrieve_movie`, `test_get_missing_movie_404` |
 | AC-9 | view test | `test_movie_list_uses_base_template` (`assertTemplateUsed`) |

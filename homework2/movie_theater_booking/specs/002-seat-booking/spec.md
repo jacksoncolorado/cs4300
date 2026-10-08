@@ -1,6 +1,6 @@
 # Spec: Seat booking
 
-**Status:** Ready for plan
+**Status:** Complete
 **Author:** Jackson McGuire  **Date:** 2026-10-07
 
 ## 1. Problem

@@ -1,6 +1,6 @@
 # Spec: Booking history
 
-**Status:** Ready for plan
+**Status:** Complete
 **Author:** Jackson McGuire  **Date:** 2026-10-08
 
 ## 1. Problem
@@ -77,6 +77,13 @@ Moviegoers need to see what they've booked. (Homework 2, or HW2, §1 "Check thei
 - When I send `PUT`, `PATCH` or `DELETE` to `/api/bookings/<id>/`
 - Then each response is 405
 
+**AC-10 (UI): Sign out**
+- Given I am signed in
+- When I open any page
+- Then the navbar shows a Sign out control next to My Bookings
+- And when I use it, I am signed out and returned to the movie list
+- And when I am signed out, the navbar shows a Sign in link instead
+
 ## 4. Data
 | Thing | Information | Rules |
 |---|---|---|
@@ -90,6 +97,7 @@ Moviegoers need to see what they've booked. (Homework 2, or HW2, §1 "Check thei
 | Get one booking (API) | `GET /api/bookings/<id>/` | 200 with `{id, movie, seat, user, booking_date}` if it is mine | 404 if it is not mine or does not exist; 403 if not signed in |
 | Create booking (API) | `POST /api/bookings/` with `{movie, seat}`; any `user` input is ignored | 201 with `{id, movie, seat, user, booking_date}` | exact 002 `detail` error for taken/out-of-service; DRF field errors for missing/unknown ids; 403 if not signed in |
 | Change or cancel booking (API) | `PUT`, `PATCH` or `DELETE /api/bookings/<id>/` | — | 405 |
+| Sign out | `POST /accounts/logout/` | signed out and redirected to `/` | — |
 
 All booking API responses use the same serializer and the same five-field shape established in 002.
 

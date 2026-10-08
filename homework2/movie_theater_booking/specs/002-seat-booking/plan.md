@@ -1,6 +1,6 @@
 # Plan: Seat booking
 
-**Spec:** [spec.md](spec.md)   **Status:** Draft
+**Spec:** [spec.md](spec.md)   **Status:** Complete
 
 ## 1. Approach
 Add `Seat` and `Booking` models, then put every booking rule in one `book_seat(user, movie, seat)`
@@ -78,11 +78,11 @@ key is ignored and `request.user` is passed directly to the service (AC-5, AC-8)
 | AC-1 | view + Behave | `test_movie_list_book_now_links_to_seat_page`, `test_seat_page_shows_per_movie_availability`; scenario “View available seats” |
 | AC-2 | view + API + service + Behave | `test_book_available_seat_from_page`, `test_book_available_seat_api_returns_created_booking`; scenario “Book an available seat” verifies owner, movie, seat, date, exact success message, and updated availability |
 | AC-3 | view + API + Behave | `test_taken_seat_page_shows_exact_error_and_back_link`, `test_taken_seat_api_returns_detail_400`; scenario “Seat already taken” |
-| AC-4 | model + API | `test_duplicate_booking_rejected_by_database`; `test_duplicate_booking_returns_error_not_500` |
-| AC-5 | view + API | `test_page_booking_uses_signed_in_user`, `test_booking_user_is_request_user_not_request_data` |
+| AC-4 | model + service + API | `test_duplicate_booking_rejected_by_database`, `test_book_seat_translates_database_duplicate_to_booking_error`, `test_duplicate_booking_returns_error_not_500` |
+| AC-5 | view + API | `test_book_available_seat_from_page`, `test_booking_user_is_request_user_not_request_data` |
 | AC-6 | integration | `test_seat_booked_via_page_refused_via_seats_api`, `test_seat_booked_via_seats_api_refused_via_page` |
 | AC-7 | view | `test_seat_booking_uses_base_template` with `assertTemplateUsed` |
-| AC-8 | view + API + Behave | `test_anonymous_seat_page_redirects_to_login`, `test_anonymous_api_booking_403`; scenario “Sign in to book a seat” |
+| AC-8 | view + API + Behave | `test_anonymous_seat_page_redirects_to_login`, `test_anonymous_api_booking_403`, `test_successful_login_redirects_to_movie_list`; scenario “Sign in to book a seat” |
 | AC-9 | view + API | `test_missing_movie_page_404`, `test_booking_unknown_movie_returns_field_error`, `test_booking_unknown_seat_returns_field_error`, `test_filter_unknown_movie_returns_field_error` |
 | AC-10 | API | `test_list_seats_without_movie_omits_available` |
 | AC-11 | API | `test_list_seats_for_movie_shows_availability` |

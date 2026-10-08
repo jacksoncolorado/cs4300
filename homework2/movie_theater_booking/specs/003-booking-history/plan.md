@@ -1,6 +1,6 @@
 # Plan: Booking history
 
-**Spec:** [spec.md](spec.md)   **Status:** Draft
+**Spec:** [spec.md](spec.md)   **Status:** Complete
 
 ## 1. Approach
 Add default ordering to `Booking`, then expose the model through one authenticated DRF viewset limited
@@ -10,7 +10,8 @@ and detail requests share the same privacy boundary. Creation validates only `mo
 ownership, availability rules, errors and response shape identical across both booking APIs.
 
 Add a login-required `booking_history` page that uses the same user-filtered, model-ordered bookings.
-The shared navbar conditionally shows My Bookings only to authenticated users. This keeps HTML and API
+The shared navbar conditionally shows My Bookings and a POST Sign out form to authenticated users, and
+a Sign in link to anonymous users. This keeps HTML and API
 behavior aligned without duplicating booking or privacy rules.
 
 **Rejected:** a full `ModelViewSet`, because it would expose update and delete actions that conflict
@@ -38,6 +39,7 @@ keeps Django's migration state synchronized with the model.
 | GET | `/api/bookings/<id>/` | `BookingViewSet.retrieve`; same filtered queryset | 200 for own booking; 404 for another user's or unknown booking; 403 anonymous | AC-3, AC-6 |
 | POST | `/api/bookings/` | `BookingViewSet.create`; validate with `SeatBookingInputSerializer`, call `book_seat(request.user, movie, seat)` | 201 with the existing five-field `BookingSerializer`; 400 with matching 002 service/field errors; 403 anonymous | AC-6, AC-7 |
 | PUT/PATCH/DELETE | `/api/bookings/<id>/` | no corresponding mixin/action | 405 | AC-9 |
+| POST | `/accounts/logout/` | Django `auth_views.LogoutView` | sign out and redirect to `/` | AC-10 |
 
 Implement `BookingViewSet` with `CreateModelMixin`, `ListModelMixin`, `RetrieveModelMixin` and
 `GenericViewSet`, plus `IsAuthenticated`. `get_queryset()` returns
@@ -52,7 +54,8 @@ router from deriving a basename and avoids presenting the unfiltered table as th
 | `bookings/migrations/0006_alter_booking_options.py` | Record the Booking ordering option |
 | `bookings/views.py` | Add the authenticated, restricted `BookingViewSet` and login-required booking-history page |
 | `bookings/urls.py` | Register `BookingViewSet` at `/api/bookings/` with `basename="booking"` and add the named `/bookings/` page route |
-| `bookings/templates/bookings/base.html` | Show My Bookings in the navbar only when `user.is_authenticated` |
+| `bookings/templates/bookings/base.html` | Show My Bookings and a POST Sign out form when authenticated; otherwise show Sign in |
+| `movie_theater_booking/settings.py` | Set `LOGOUT_REDIRECT_URL = "/"` |
 | `bookings/templates/bookings/booking_history.html` | Extend `base.html`; show movie, seat and `F j, Y` booking date, or the exact empty state |
 | `bookings/tests.py` | Add model-ordering, API privacy/creation/error/method, and page tests |
 | `features/booking_history.feature` | Add user-visible history, privacy, empty-state and sign-in scenarios |
@@ -70,9 +73,10 @@ No new serializer is needed: `SeatBookingInputSerializer` validates create input
 | AC-4 | view + Behave | `test_booking_history_uses_base_template`, `test_navbar_shows_my_bookings_only_when_authenticated`; scenario “Authenticated booking navigation” |
 | AC-5 | view + Behave | `test_booking_history_empty_state`; scenario “No booking history yet” |
 | AC-6 | view + API + Behave | `test_anonymous_booking_history_redirects_to_login`, `test_anonymous_booking_list_returns_403`, `test_anonymous_booking_create_returns_403`; scenario “Sign in to view booking history” |
-| AC-7 | API integration | `test_create_booking_returns_five_field_shape`, `test_create_booking_ignores_user_in_request_data`, `test_taken_seat_returns_matching_detail`, `test_out_of_service_seat_returns_matching_detail`, `test_create_booking_unknown_ids_return_field_errors`, `test_create_booking_missing_fields_return_field_errors`, `test_seat_booked_via_seats_api_refused_via_bookings_api` |
+| AC-7 | API integration | `test_create_booking_returns_five_field_shape`, `test_create_booking_ignores_user_in_request_data`, `test_taken_seat_returns_matching_detail`, `test_out_of_service_seat_returns_matching_detail`, `test_create_booking_unknown_ids_return_field_errors`, `test_create_booking_missing_fields_return_field_errors`, `test_seat_booked_via_seats_api_refused_via_bookings_api`, `test_seat_booked_via_page_refused_via_bookings_api` |
 | AC-8 | model + API + view + Behave | `test_booking_default_ordering_newest_date_then_highest_id`, `test_booking_api_uses_default_ordering`, `test_booking_history_page_uses_default_ordering`; scenario “Newest bookings appear first” |
 | AC-9 | API | `test_booking_update_and_delete_methods_not_allowed` |
+| AC-10 | view | `test_navbar_shows_sign_out_when_authenticated`, `test_sign_out_returns_to_movie_list` |
 
 Run `python manage.py test`, `python manage.py behave`, and
 `coverage run --source=bookings manage.py test && coverage report`; coverage for `bookings` must remain

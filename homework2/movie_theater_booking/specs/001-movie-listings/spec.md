@@ -1,7 +1,7 @@
 # Spec: Movie listings
 
-**Status:** Reviewed (worked example: change anything you'd do differently)
-**Author:** <your name>  **Date:** <YYYY-MM-DD>
+**Status:** Complete
+**Author:** Jackson McGuire  **Date:** 2026-10-06
 
 ## 1. Problem
 Moviegoers need to see what's showing before they can book a seat. Staff need to add, update
