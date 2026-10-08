@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 
@@ -33,3 +34,24 @@ class Seat(models.Model):
 
     def __str__(self):
         return self.seat_number
+
+
+class Booking(models.Model):
+    """A user's reservation of one seat for one movie."""
+
+    movie = models.ForeignKey(Movie, on_delete=models.CASCADE, related_name="bookings")
+    seat = models.ForeignKey(Seat, on_delete=models.CASCADE, related_name="bookings")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="bookings",
+    )
+    booking_date = models.DateField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["movie", "seat"],
+                name="unique_movie_seat_booking",
+            )
+        ]

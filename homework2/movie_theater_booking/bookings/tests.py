@@ -2,13 +2,60 @@ import importlib
 import os
 import subprocess
 import sys
+from datetime import date
 
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from django.test import SimpleTestCase, TestCase
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import Movie, Seat
+from .models import Booking, Movie, Seat
+
+
+class BookingModelTests(TestCase):
+    def setUp(self):
+        Booking.objects.all().delete()
+        Movie.objects.all().delete()
+        Seat.objects.all().delete()
+        self.movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+        self.seat = Seat.objects.create(seat_number="A1")
+        self.user = get_user_model().objects.create_user(username="sam")
+
+    def test_booking_records_user_movie_seat_and_date(self):
+        booking = Booking.objects.create(
+            movie=self.movie,
+            seat=self.seat,
+            user=self.user,
+        )
+
+        self.assertEqual(booking.movie, self.movie)
+        self.assertEqual(booking.seat, self.seat)
+        self.assertEqual(booking.user, self.user)
+        self.assertEqual(booking.booking_date, date.today())
+
+    def test_duplicate_booking_rejected_by_database(self):
+        Booking.objects.create(
+            movie=self.movie,
+            seat=self.seat,
+            user=self.user,
+        )
+        another_user = get_user_model().objects.create_user(username="alex")
+
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            Booking.objects.create(
+                movie=self.movie,
+                seat=self.seat,
+                user=another_user,
+            )
+
+        self.assertEqual(Booking.objects.count(), 1)
 
 
 class SeatModelTests(TestCase):
