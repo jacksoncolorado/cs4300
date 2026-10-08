@@ -14,3 +14,4 @@ Keep this log as you go, then copy the summary into your README.
 ## Log
 | Date | Feature / task | What I asked Codex | What I kept, changed or rejected |
 | 2026-10-06 | 001 movie listings, T1–T15 | Implement each task from tasks.md test-first, one at a time | Kept all generated code; verified each diff and test run myself |
+| 2026-10-07 | 002 seat booking, T1–T15 | Review my spec, write the plan and tasks, then implement each task test-first | I wrote the spec and made all the design decisions (per-movie availability, derived status, one book_seat service); Codex flagged gaps I then answered; I read every diff and ran the suite before each commit |
