@@ -56,3 +56,6 @@ class Booking(models.Model):
                 name="unique_movie_seat_booking",
             )
         ]
+
+    def __str__(self):
+        return f"{self.movie} - {self.seat} - {self.user}"

@@ -6,6 +6,7 @@ from datetime import date, timedelta
 from unittest.mock import patch
 
 from django.conf import settings
+from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
@@ -578,6 +579,40 @@ class BookingAPITests(APITestCase):
         )
         self.assertEqual(Booking.objects.count(), 1)
 
+    def test_seat_booked_via_page_refused_via_bookings_api(self):
+        movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+        seat = Seat.objects.create(seat_number="A1")
+        self.client.force_login(self.user)
+
+        page_response = self.client.post(
+            f"/movies/{movie.id}/seats/",
+            {"seat": seat.id},
+        )
+        bookings_api_response = self.client.post(
+            "/api/bookings/",
+            {"movie": movie.id, "seat": seat.id},
+            format="json",
+        )
+
+        self.assertRedirects(
+            page_response,
+            f"/movies/{movie.id}/seats/",
+        )
+        self.assertEqual(
+            bookings_api_response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertEqual(
+            bookings_api_response.json(),
+            {"detail": "Seat A1 is already booked for Dune."},
+        )
+        self.assertEqual(Booking.objects.count(), 1)
+
 
 class BookingServiceTests(TestCase):
     def setUp(self):
@@ -613,6 +648,23 @@ class BookingServiceTests(TestCase):
             "Seat A1 is already booked for Dune.",
         ):
             book_seat(self.user, self.movie, self.seat)
+
+        self.assertEqual(Booking.objects.count(), 1)
+
+    def test_book_seat_translates_database_duplicate_to_booking_error(self):
+        Booking.objects.create(
+            user=self.user,
+            movie=self.movie,
+            seat=self.seat,
+        )
+
+        with patch("bookings.services.Booking.objects.filter") as booking_filter:
+            booking_filter.return_value.exists.return_value = False
+            with self.assertRaisesMessage(
+                SeatBookingError,
+                "Seat A1 is already booked for Dune.",
+            ):
+                book_seat(self.user, self.movie, self.seat)
 
         self.assertEqual(Booking.objects.count(), 1)
 
@@ -654,6 +706,15 @@ class BookingModelTests(TestCase):
         self.assertEqual(booking.seat, self.seat)
         self.assertEqual(booking.user, self.user)
         self.assertEqual(booking.booking_date, date.today())
+
+    def test_booking_str(self):
+        booking = Booking.objects.create(
+            movie=self.movie,
+            seat=self.seat,
+            user=self.user,
+        )
+
+        self.assertEqual(str(booking), "Dune - A1 - sam")
 
     def test_duplicate_booking_rejected_by_database(self):
         Booking.objects.create(
@@ -866,6 +927,20 @@ class MovieAPITests(APITestCase):
             "description": "A widower travels to South America in his house.",
             "release_date": "2009-05-29",
             "duration": 0,
+        }
+
+        response = self.client.post("/api/movies/", movie_data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("duration", response.json())
+        self.assertFalse(Movie.objects.exists())
+
+    def test_create_movie_negative_duration_400(self):
+        movie_data = {
+            "title": "Up",
+            "description": "A widower travels to South America in his house.",
+            "release_date": "2009-05-29",
+            "duration": -1,
         }
 
         response = self.client.post("/api/movies/", movie_data, format="json")
@@ -1332,6 +1407,26 @@ class AuthenticationViewTests(TestCase):
         self.assertTemplateUsed(response, "bookings/base.html")
         self.assertContains(response, "cdn.jsdelivr.net/npm/bootstrap")
         self.assertEqual(settings.LOGIN_REDIRECT_URL, "/")
+
+    def test_successful_login_redirects_to_movie_list(self):
+        get_user_model().objects.create_user(
+            username="sam",
+            password="test-password",
+        )
+
+        response = self.client.post(
+            "/accounts/login/",
+            {"username": "sam", "password": "test-password"},
+        )
+
+        self.assertRedirects(response, "/")
+
+
+class AdminRegistrationTests(SimpleTestCase):
+    def test_booking_models_are_registered(self):
+        self.assertIn(Movie, admin.site._registry)
+        self.assertIn(Seat, admin.site._registry)
+        self.assertIn(Booking, admin.site._registry)
 
 
 class DemoUserCommandTests(TestCase):
