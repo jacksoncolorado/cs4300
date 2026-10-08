@@ -1,0 +1,18 @@
+{% extends "bookings/base.html" %}
+
+{% block title %}My Bookings | Movie Theater Booking{% endblock %}
+
+{% block content %}
+<h1>My Bookings</h1>
+<div class="list-group">
+    {% for booking in bookings %}
+        <article class="list-group-item">
+            <h2 class="h5">{{ booking.movie.title }}</h2>
+            <p>
+                <strong>Seat:</strong> {{ booking.seat.seat_number }}<br>
+                <strong>Booking date:</strong> {{ booking.booking_date|date:"F j, Y" }}
+            </p>
+        </article>
+    {% endfor %}
+</div>
+{% endblock %}

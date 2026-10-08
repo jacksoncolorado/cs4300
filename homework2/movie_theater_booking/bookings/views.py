@@ -116,6 +116,17 @@ def movie_list(request):
 
 
 @login_required
+def booking_history(request):
+    """Render the signed-in user's booking history."""
+
+    return render(
+        request,
+        "bookings/booking_history.html",
+        {"bookings": request.user.bookings.all()},
+    )
+
+
+@login_required
 def book_seat_view(request, movie_id):
     """Render the authenticated seat-booking page."""
 

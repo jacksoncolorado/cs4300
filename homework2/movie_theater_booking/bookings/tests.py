@@ -12,6 +12,7 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.db import IntegrityError, transaction
 from django.test import SimpleTestCase, TestCase
+from django.utils.formats import date_format
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -1164,6 +1165,70 @@ class SeatBookingViewTests(TestCase):
             "Seat A1 is already booked for Dune.",
         )
         self.assertEqual(Booking.objects.count(), 1)
+
+
+class BookingHistoryViewTests(TestCase):
+    def setUp(self):
+        Booking.objects.all().delete()
+        Movie.objects.all().delete()
+        Seat.objects.all().delete()
+        self.user = get_user_model().objects.create_user(username="sam")
+        self.movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+        self.seat = Seat.objects.create(seat_number="A1")
+
+    def test_booking_history_shows_movie_seat_and_formatted_date(self):
+        booking = Booking.objects.create(
+            movie=self.movie,
+            seat=self.seat,
+            user=self.user,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get("/bookings/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Dune")
+        self.assertContains(response, "A1")
+        self.assertContains(
+            response,
+            date_format(booking.booking_date, "F j, Y"),
+        )
+
+    def test_booking_history_uses_base_template(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get("/bookings/")
+
+        self.assertTemplateUsed(response, "bookings/booking_history.html")
+        self.assertTemplateUsed(response, "bookings/base.html")
+        self.assertContains(response, "cdn.jsdelivr.net/npm/bootstrap")
+
+    def test_navbar_shows_my_bookings_only_when_authenticated(self):
+        anonymous_response = self.client.get("/")
+
+        self.assertNotContains(anonymous_response, "My Bookings")
+        self.client.force_login(self.user)
+
+        authenticated_response = self.client.get("/")
+
+        self.assertContains(
+            authenticated_response,
+            '<a class="nav-link" href="/bookings/">My Bookings</a>',
+            html=True,
+        )
+
+    def test_anonymous_booking_history_redirects_to_login(self):
+        response = self.client.get("/bookings/")
+
+        self.assertRedirects(
+            response,
+            "/accounts/login/?next=/bookings/",
+        )
 
 
 class AuthenticationViewTests(TestCase):
