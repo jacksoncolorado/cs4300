@@ -72,17 +72,31 @@ class SeatViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class BookingViewSet(
+    mixins.CreateModelMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
     viewsets.GenericViewSet,
 ):
-    """List and retrieve only the signed-in user's bookings."""
+    """Create, list and retrieve only the signed-in user's bookings."""
 
     serializer_class = BookingSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return Booking.objects.filter(user=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        booking_input = SeatBookingInputSerializer(data=request.data)
+        booking_input.is_valid(raise_exception=True)
+        booking = book_seat(
+            request.user,
+            booking_input.validated_data["movie"],
+            booking_input.validated_data["seat"],
+        )
+        return Response(
+            BookingSerializer(booking).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 def movie_list(request):

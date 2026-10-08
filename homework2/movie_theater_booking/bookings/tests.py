@@ -363,6 +363,78 @@ class BookingAPITests(APITestCase):
                     status.HTTP_405_METHOD_NOT_ALLOWED,
                 )
 
+    def test_create_booking_returns_five_field_shape(self):
+        movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+        seat = Seat.objects.create(seat_number="A1")
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.post(
+            "/api/bookings/",
+            {"movie": movie.id, "seat": seat.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        booking = Booking.objects.get()
+        self.assertEqual(
+            response.json(),
+            {
+                "id": booking.id,
+                "movie": movie.id,
+                "seat": seat.id,
+                "user": self.user.id,
+                "booking_date": date.today().isoformat(),
+            },
+        )
+
+    def test_create_booking_ignores_user_in_request_data(self):
+        movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+        seat = Seat.objects.create(seat_number="A1")
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.post(
+            "/api/bookings/",
+            {
+                "movie": movie.id,
+                "seat": seat.id,
+                "user": self.other_user.id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        booking = Booking.objects.get()
+        self.assertEqual(booking.user, self.user)
+        self.assertEqual(response.json()["user"], self.user.id)
+
+    def test_anonymous_booking_create_returns_403(self):
+        movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+        seat = Seat.objects.create(seat_number="A1")
+
+        response = self.client.post(
+            "/api/bookings/",
+            {"movie": movie.id, "seat": seat.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertFalse(Booking.objects.exists())
+
 
 class BookingServiceTests(TestCase):
     def setUp(self):
