@@ -1491,6 +1491,7 @@ class DeploymentSettingsTests(SimpleTestCase):
     def test_development_settings_use_fallback_secret_key(self):
         environment = os.environ.copy()
         environment.pop("DEBUG", None)
+        environment.pop("RENDER", None)
         environment.pop("SECRET_KEY", None)
 
         result = subprocess.run(
@@ -1509,6 +1510,54 @@ class DeploymentSettingsTests(SimpleTestCase):
         )
 
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_render_defaults_to_debug_false(self):
+        environment = os.environ.copy()
+        environment["RENDER"] = "true"
+        environment["SECRET_KEY"] = "deployment-test-secret"
+        environment.pop("DEBUG", None)
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "from movie_theater_booking.settings import DEBUG; assert DEBUG is False",
+            ],
+            env=environment,
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_explicit_debug_value_overrides_environment_default(self):
+        environments = (
+            {"RENDER": "true", "DEBUG": "True"},
+            {"DEBUG": "False", "SECRET_KEY": "deployment-test-secret"},
+        )
+
+        for overrides in environments:
+            environment = os.environ.copy()
+            environment.pop("RENDER", None)
+            environment.update(overrides)
+            expected = overrides["DEBUG"] == "True"
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-c",
+                    (
+                        "from movie_theater_booking.settings import DEBUG; "
+                        f"assert DEBUG is {expected}"
+                    ),
+                ],
+                env=environment,
+                capture_output=True,
+                text=True,
+            )
+
+            with self.subTest(overrides=overrides):
+                self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_production_settings_require_secret_key(self):
         environment = os.environ.copy()
