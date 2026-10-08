@@ -71,8 +71,12 @@ class SeatViewSet(viewsets.ReadOnlyModelViewSet):
         )
 
 
-class BookingViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
-    """List only the signed-in user's bookings."""
+class BookingViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+):
+    """List and retrieve only the signed-in user's bookings."""
 
     serializer_class = BookingSerializer
     permission_classes = [IsAuthenticated]

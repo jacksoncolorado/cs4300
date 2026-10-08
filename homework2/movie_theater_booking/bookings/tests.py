@@ -319,6 +319,50 @@ class BookingAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_cannot_retrieve_another_users_booking(self):
+        other_booking = self.create_booking("Up", "A2", user=self.other_user)
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get(f"/api/bookings/{other_booking.id}/")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertNotContains(response, "Up", status_code=404)
+
+    def test_retrieve_own_booking_returns_five_field_shape(self):
+        booking = self.create_booking("Dune", "A1")
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get(f"/api/bookings/{booking.id}/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.json(),
+            {
+                "id": booking.id,
+                "movie": booking.movie_id,
+                "seat": booking.seat_id,
+                "user": self.user.id,
+                "booking_date": booking.booking_date.isoformat(),
+            },
+        )
+
+    def test_booking_update_and_delete_methods_not_allowed(self):
+        booking = self.create_booking("Dune", "A1")
+        self.client.force_authenticate(user=self.user)
+
+        responses = (
+            self.client.put(f"/api/bookings/{booking.id}/", {}),
+            self.client.patch(f"/api/bookings/{booking.id}/", {}),
+            self.client.delete(f"/api/bookings/{booking.id}/"),
+        )
+
+        for response in responses:
+            with self.subTest(method=response.request["REQUEST_METHOD"]):
+                self.assertEqual(
+                    response.status_code,
+                    status.HTTP_405_METHOD_NOT_ALLOWED,
+                )
+
 
 class BookingServiceTests(TestCase):
     def setUp(self):
