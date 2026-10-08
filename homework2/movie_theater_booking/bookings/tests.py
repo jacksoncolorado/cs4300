@@ -435,6 +435,148 @@ class BookingAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertFalse(Booking.objects.exists())
 
+    def test_taken_seat_returns_matching_detail(self):
+        booking = self.create_booking("Dune", "A1")
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.post(
+            "/api/bookings/",
+            {"movie": booking.movie_id, "seat": booking.seat_id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.json(),
+            {"detail": "Seat A1 is already booked for Dune."},
+        )
+        self.assertEqual(Booking.objects.count(), 1)
+
+    def test_out_of_service_seat_returns_matching_detail(self):
+        movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+        seat = Seat.objects.create(seat_number="A3", booking_status=True)
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.post(
+            "/api/bookings/",
+            {"movie": movie.id, "seat": seat.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.json(),
+            {"detail": "Seat A3 is out of service."},
+        )
+        self.assertFalse(Booking.objects.exists())
+
+    def test_create_booking_unknown_ids_return_field_errors(self):
+        movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+        seat = Seat.objects.create(seat_number="A1")
+        self.client.force_authenticate(user=self.user)
+
+        responses = (
+            (
+                self.client.post(
+                    "/api/bookings/",
+                    {"movie": 9999, "seat": seat.id},
+                    format="json",
+                ),
+                {"movie": ['Invalid pk "9999" - object does not exist.']},
+            ),
+            (
+                self.client.post(
+                    "/api/bookings/",
+                    {"movie": movie.id, "seat": 9999},
+                    format="json",
+                ),
+                {"seat": ['Invalid pk "9999" - object does not exist.']},
+            ),
+        )
+
+        for response, expected_error in responses:
+            with self.subTest(field=next(iter(expected_error))):
+                self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertEqual(response.json(), expected_error)
+        self.assertFalse(Booking.objects.exists())
+
+    def test_create_booking_missing_fields_return_field_errors(self):
+        movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+        seat = Seat.objects.create(seat_number="A1")
+        self.client.force_authenticate(user=self.user)
+
+        responses = (
+            (
+                self.client.post(
+                    "/api/bookings/",
+                    {"seat": seat.id},
+                    format="json",
+                ),
+                {"movie": ["This field is required."]},
+            ),
+            (
+                self.client.post(
+                    "/api/bookings/",
+                    {"movie": movie.id},
+                    format="json",
+                ),
+                {"seat": ["This field is required."]},
+            ),
+        )
+
+        for response, expected_error in responses:
+            with self.subTest(field=next(iter(expected_error))):
+                self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertEqual(response.json(), expected_error)
+        self.assertFalse(Booking.objects.exists())
+
+    def test_seat_booked_via_seats_api_refused_via_bookings_api(self):
+        movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+        seat = Seat.objects.create(seat_number="A1")
+        self.client.force_authenticate(user=self.user)
+
+        seat_api_response = self.client.post(
+            "/api/seats/book/",
+            {"movie": movie.id, "seat": seat.id},
+            format="json",
+        )
+        bookings_api_response = self.client.post(
+            "/api/bookings/",
+            {"movie": movie.id, "seat": seat.id},
+            format="json",
+        )
+
+        self.assertEqual(seat_api_response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            bookings_api_response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+        self.assertEqual(
+            bookings_api_response.json(),
+            {"detail": "Seat A1 is already booked for Dune."},
+        )
+        self.assertEqual(Booking.objects.count(), 1)
+
 
 class BookingServiceTests(TestCase):
     def setUp(self):
