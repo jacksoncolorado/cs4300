@@ -1297,6 +1297,37 @@ class BookingHistoryViewTests(TestCase):
             html=True,
         )
 
+    def test_navbar_shows_sign_out_when_authenticated(self):
+        self.client.force_login(self.user)
+
+        authenticated_response = self.client.get("/")
+
+        self.assertContains(
+            authenticated_response,
+            '<form method="post" action="/accounts/logout/">',
+        )
+        self.assertContains(authenticated_response, "Sign out")
+        self.assertNotContains(authenticated_response, "Sign in")
+
+        self.client.logout()
+        anonymous_response = self.client.get("/")
+
+        self.assertContains(
+            anonymous_response,
+            '<a class="nav-link" href="/accounts/login/">Sign in</a>',
+            html=True,
+        )
+        self.assertNotContains(anonymous_response, "Sign out")
+
+    def test_sign_out_returns_to_movie_list(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post("/accounts/logout/", follow=True)
+
+        self.assertRedirects(response, "/")
+        self.assertFalse(response.wsgi_request.user.is_authenticated)
+        self.assertContains(response, "Sign in")
+
     def test_anonymous_booking_history_redirects_to_login(self):
         response = self.client.get("/bookings/")
 
