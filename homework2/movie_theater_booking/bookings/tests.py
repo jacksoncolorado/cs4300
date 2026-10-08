@@ -12,6 +12,57 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from .models import Booking, Movie, Seat
+from .services import SeatBookingError, book_seat
+
+
+class BookingServiceTests(TestCase):
+    def setUp(self):
+        Booking.objects.all().delete()
+        Movie.objects.all().delete()
+        Seat.objects.all().delete()
+        self.movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+        self.seat = Seat.objects.create(seat_number="A1")
+        self.user = get_user_model().objects.create_user(username="sam")
+
+    def test_book_seat_creates_booking(self):
+        booking = book_seat(self.user, self.movie, self.seat)
+
+        self.assertEqual(booking.user, self.user)
+        self.assertEqual(booking.movie, self.movie)
+        self.assertEqual(booking.seat, self.seat)
+        self.assertEqual(Booking.objects.count(), 1)
+
+    def test_book_seat_rejects_taken_seat(self):
+        Booking.objects.create(
+            user=self.user,
+            movie=self.movie,
+            seat=self.seat,
+        )
+
+        with self.assertRaisesMessage(
+            SeatBookingError,
+            "Seat A1 is already booked for Dune.",
+        ):
+            book_seat(self.user, self.movie, self.seat)
+
+        self.assertEqual(Booking.objects.count(), 1)
+
+    def test_book_seat_rejects_out_of_service_seat(self):
+        self.seat.booking_status = True
+        self.seat.save()
+
+        with self.assertRaisesMessage(
+            SeatBookingError,
+            "Seat A1 is out of service.",
+        ):
+            book_seat(self.user, self.movie, self.seat)
+
+        self.assertFalse(Booking.objects.exists())
 
 
 class BookingModelTests(TestCase):
