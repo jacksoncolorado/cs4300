@@ -4,6 +4,7 @@ import subprocess
 import sys
 from datetime import date
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -620,6 +621,32 @@ class MovieViewTests(TestCase):
 
         self.assertContains(response, "No movies are showing right now")
         self.assertNotContains(response, "Book Now")
+
+
+class AuthenticationViewTests(TestCase):
+    def test_anonymous_seat_page_redirects_to_login(self):
+        movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+
+        response = self.client.get(f"/movies/{movie.id}/seats/")
+
+        self.assertRedirects(
+            response,
+            f"/accounts/login/?next=/movies/{movie.id}/seats/",
+        )
+
+    def test_login_uses_base_template(self):
+        response = self.client.get("/accounts/login/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "registration/login.html")
+        self.assertTemplateUsed(response, "bookings/base.html")
+        self.assertContains(response, "cdn.jsdelivr.net/npm/bootstrap")
+        self.assertEqual(settings.LOGIN_REDIRECT_URL, "/")
 
 
 class DeploymentSettingsTests(SimpleTestCase):

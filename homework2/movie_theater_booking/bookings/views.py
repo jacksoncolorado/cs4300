@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -77,3 +78,10 @@ def movie_list(request):
         "bookings/movie_list.html",
         {"movies": Movie.objects.all()},
     )
+
+
+@login_required
+def book_seat_view(request, movie_id):
+    """Render the authenticated seat-booking page."""
+
+    return render(request, "bookings/seat_booking.html")
