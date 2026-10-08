@@ -15,7 +15,7 @@
 - [x] **T6** — Add the login-required history page, formatted booking details, shared layout and authenticated-only navbar link · tests: `test_booking_history_shows_movie_seat_and_formatted_date`, `test_booking_history_uses_base_template`, `test_navbar_shows_my_bookings_only_when_authenticated`, `test_anonymous_booking_history_redirects_to_login` · covers: AC-1, AC-4, AC-6
 - [x] **T7** — Keep the history page private, ordered and explicit when empty · tests: `test_booking_history_page_only_shows_own`, `test_booking_history_empty_state`, `test_booking_history_page_uses_default_ordering` · covers: AC-2, AC-5, AC-8
 - [x] **T8** — Add Behave scenarios “View my booking history,” “Only my bookings are shown,” and “Newest bookings appear first” · covers: AC-1, AC-2, AC-8
-- [ ] **T9** — Add Behave scenarios “Authenticated booking navigation,” “No booking history yet,” and “Sign in to view booking history” · covers: AC-4, AC-5, AC-6
+- [x] **T9** — Add Behave scenarios “Authenticated booking navigation,” “No booking history yet,” and “Sign in to view booking history” · covers: AC-4, AC-5, AC-6
 
 ## Done when
 - [ ] Every acceptance criterion in `spec.md` has a passing test

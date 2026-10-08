@@ -20,3 +20,20 @@ Feature: Booking history
     And "Sam" has bookings on different and matching dates
     When I open My Bookings
     Then the bookings are shown by newest date and highest id first
+
+  Scenario: Authenticated booking navigation
+    Given I am signed in as "Sam"
+    When I open My Bookings
+    Then the navigation links to Movies and My Bookings
+
+  Scenario: No booking history yet
+    Given I am signed in as "Sam"
+    And I have no bookings
+    When I open My Bookings
+    Then I see "You have no bookings yet."
+
+  Scenario: Sign in to view booking history
+    Given I am not signed in
+    When I open My Bookings
+    Then I am redirected to sign in
+    And the navigation does not link to My Bookings

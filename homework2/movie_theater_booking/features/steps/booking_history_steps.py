@@ -111,3 +111,49 @@ def bookings_are_ordered(context):
         heading.get_text(strip=True) for heading in page.select("article h2")
     ]
     assert actual_titles == context.expected_booking_titles
+
+
+@then("the navigation links to Movies and My Bookings")
+def authenticated_navigation_links(context):
+    """Verify signed-in moviegoers receive both shared navigation links."""
+
+    page = BeautifulSoup(context.response.content, "html.parser")
+    links = {link.get_text(strip=True): link.get("href") for link in page.select("nav a")}
+    assert links["Movies"] == "/"
+    assert links["My Bookings"] == "/bookings/"
+
+
+@given("I have no bookings")
+def remove_current_users_bookings(context):
+    """Ensure the signed-in moviegoer's history is empty."""
+
+    Booking.objects.filter(user=context.user).delete()
+
+
+@then('I see "You have no bookings yet."')
+def see_empty_booking_message(context):
+    """Verify the history explains that no reservations exist."""
+
+    page_text = BeautifulSoup(context.response.content, "html.parser").get_text(
+        " ", strip=True
+    )
+    assert "You have no bookings yet." in page_text
+
+
+@then("I am redirected to sign in")
+def redirected_to_sign_in(context):
+    """Verify anonymous visitors are sent to login with a return URL."""
+
+    assert context.response.status_code == 302
+    assert context.response["Location"] == "/accounts/login/?next=/bookings/"
+
+
+@then("the navigation does not link to My Bookings")
+def anonymous_navigation_hides_booking_history(context):
+    """Verify the shared anonymous navbar does not expose booking history."""
+
+    response = context.test.client.get("/")
+    page = BeautifulSoup(response.content, "html.parser")
+    links = {link.get_text(strip=True) for link in page.select("nav a")}
+    assert "Movies" in links
+    assert "My Bookings" not in links
