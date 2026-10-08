@@ -754,6 +754,49 @@ class SeatBookingViewTests(TestCase):
                 self.assertFalse(availability[seat.seat_number])
         self.assertFalse(Booking.objects.exists())
 
+    def test_seat_booked_via_page_refused_via_seats_api(self):
+        seat = Seat.objects.create(seat_number="A1")
+
+        page_response = self.client.post(
+            f"/movies/{self.movie.id}/seats/",
+            {"seat": seat.id},
+        )
+        api_response = self.client.post(
+            "/api/seats/book/",
+            {"movie": self.movie.id, "seat": seat.id},
+        )
+
+        self.assertRedirects(
+            page_response,
+            f"/movies/{self.movie.id}/seats/",
+        )
+        self.assertEqual(api_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            api_response.json(),
+            {"detail": "Seat A1 is already booked for Dune."},
+        )
+        self.assertEqual(Booking.objects.count(), 1)
+
+    def test_seat_booked_via_seats_api_refused_via_page(self):
+        seat = Seat.objects.create(seat_number="A1")
+
+        api_response = self.client.post(
+            "/api/seats/book/",
+            {"movie": self.movie.id, "seat": seat.id},
+        )
+        page_response = self.client.post(
+            f"/movies/{self.movie.id}/seats/",
+            {"seat": seat.id},
+        )
+
+        self.assertEqual(api_response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(page_response.status_code, 200)
+        self.assertContains(
+            page_response,
+            "Seat A1 is already booked for Dune.",
+        )
+        self.assertEqual(Booking.objects.count(), 1)
+
 
 class AuthenticationViewTests(TestCase):
     def test_anonymous_seat_page_redirects_to_login(self):
