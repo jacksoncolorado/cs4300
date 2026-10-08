@@ -1488,11 +1488,54 @@ class DemoUserCommandTests(TestCase):
 
 
 class DeploymentSettingsTests(SimpleTestCase):
-    def test_settings_use_environment_and_whitenoise(self):
+    def test_development_settings_use_fallback_secret_key(self):
+        environment = os.environ.copy()
+        environment.pop("DEBUG", None)
+        environment.pop("SECRET_KEY", None)
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "from movie_theater_booking.settings import DEBUG, SECRET_KEY; "
+                    "assert DEBUG is True; "
+                    "assert SECRET_KEY == 'development-only-insecure-secret-key'"
+                ),
+            ],
+            env=environment,
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_production_settings_require_secret_key(self):
+        environment = os.environ.copy()
+        environment["DEBUG"] = "False"
+        environment.pop("SECRET_KEY", None)
+
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import movie_theater_booking.settings",
+            ],
+            env=environment,
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("ImproperlyConfigured", result.stderr)
+        self.assertIn("SECRET_KEY", result.stderr)
+        self.assertNotIn("KeyError", result.stderr)
+
+    def test_production_settings_use_environment_and_whitenoise(self):
         environment = os.environ.copy()
         environment["SECRET_KEY"] = "deployment-test-secret"
-        environment["DEBUG"] = "True"
-        enabled = subprocess.run(
+        environment["DEBUG"] = "False"
+        result = subprocess.run(
             [
                 sys.executable,
                 "-c",
@@ -1500,7 +1543,7 @@ class DeploymentSettingsTests(SimpleTestCase):
                     "from movie_theater_booking.settings import "
                     "DEBUG, MIDDLEWARE, SECRET_KEY; "
                     "assert SECRET_KEY == 'deployment-test-secret'; "
-                    "assert DEBUG is True; "
+                    "assert DEBUG is False; "
                     "assert MIDDLEWARE[1] == "
                     "'whitenoise.middleware.WhiteNoiseMiddleware'"
                 ),
@@ -1509,20 +1552,7 @@ class DeploymentSettingsTests(SimpleTestCase):
             capture_output=True,
             text=True,
         )
-        self.assertEqual(enabled.returncode, 0, enabled.stderr)
-
-        environment.pop("DEBUG")
-        disabled = subprocess.run(
-            [
-                sys.executable,
-                "-c",
-                "from movie_theater_booking.settings import DEBUG; assert DEBUG is False",
-            ],
-            env=environment,
-            capture_output=True,
-            text=True,
-        )
-        self.assertEqual(disabled.returncode, 0, disabled.stderr)
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 
 class SampleMovieMigrationTests(TestCase):
