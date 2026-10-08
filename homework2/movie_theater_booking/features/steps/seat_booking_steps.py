@@ -15,6 +15,13 @@ def sign_in(context, username):
     context.test.client.force_login(context.user)
 
 
+@given("I am not signed in")
+def sign_out(context):
+    """Ensure the seat page request has no authenticated session."""
+
+    context.test.client.logout()
+
+
 @given('the movie "{title}" has seats "{first_seat}" and "{second_seat}"')
 def create_movie_with_seats(context, title, first_seat, second_seat):
     """Create a movie and the two physical seats used by the scenario."""
@@ -41,6 +48,15 @@ def create_existing_booking(context, seat_number, title):
         seat=Seat.objects.get(seat_number=seat_number),
         user=context.user,
     )
+
+
+@given('seat "{seat_number}" is out of service')
+def mark_seat_out_of_service(context, seat_number):
+    """Mark a physical seat unavailable for every movie."""
+
+    seat = Seat.objects.get(seat_number=seat_number)
+    seat.booking_status = True
+    seat.save(update_fields=["booking_status"])
 
 
 @given('the movie "{title}" has available seat "{seat_number}"')
@@ -116,3 +132,45 @@ def see_message(context, message):
 
     page = BeautifulSoup(context.response.content, "html.parser")
     assert message in page.get_text(" ", strip=True)
+
+
+@then('I see a link back to the seat page for "{title}"')
+def see_movie_seat_page_link(context, title):
+    """Verify that an error offers the movie-specific return link."""
+
+    movie = Movie.objects.get(title=title)
+    page = BeautifulSoup(context.response.content, "html.parser")
+    link = page.find("a", string="Back to seats")
+    assert link is not None
+    assert link["href"] == f"/movies/{movie.id}/seats/"
+
+
+@then('exactly one booking exists for seat "{seat_number}" and "{title}"')
+def exactly_one_booking_exists(context, seat_number, title):
+    """Verify that retrying a taken seat did not create a duplicate."""
+
+    count = Booking.objects.filter(
+        movie__title=title,
+        seat__seat_number=seat_number,
+    ).count()
+    assert count == 1
+
+
+@then("I am redirected to sign in before booking")
+def redirected_to_sign_in(context):
+    """Verify Django preserved the requested seat page in the login redirect."""
+
+    expected_url = f"/accounts/login/?next=/movies/{context.movie.id}/seats/"
+    assert context.response.status_code == 302
+    assert context.response["Location"] == expected_url
+
+
+@then('no booking exists for seat "{seat_number}" and "{title}"')
+def no_booking_exists(context, seat_number, title):
+    """Verify a rejected seat request made no database change."""
+
+    exists = Booking.objects.filter(
+        movie__title=title,
+        seat__seat_number=seat_number,
+    ).exists()
+    assert not exists
