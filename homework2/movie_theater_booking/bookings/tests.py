@@ -15,6 +15,78 @@ from .models import Booking, Movie, Seat
 from .services import SeatBookingError, book_seat
 
 
+class SeatAPITests(APITestCase):
+    def setUp(self):
+        Booking.objects.all().delete()
+        Movie.objects.all().delete()
+        Seat.objects.all().delete()
+
+    def test_list_seats_without_movie_omits_available(self):
+        available_seat = Seat.objects.create(seat_number="A1")
+        unavailable_seat = Seat.objects.create(
+            seat_number="A2",
+            booking_status=True,
+        )
+
+        response = self.client.get("/api/seats/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        seats = {seat["seat_number"]: seat for seat in response.json()}
+        self.assertEqual(
+            seats,
+            {
+                "A1": {
+                    "id": available_seat.id,
+                    "seat_number": "A1",
+                    "booking_status": False,
+                },
+                "A2": {
+                    "id": unavailable_seat.id,
+                    "seat_number": "A2",
+                    "booking_status": True,
+                },
+            },
+        )
+        self.assertTrue(all("available" not in seat for seat in seats.values()))
+
+    def test_list_seats_for_movie_shows_availability(self):
+        movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+        available_seat = Seat.objects.create(seat_number="A1")
+        booked_seat = Seat.objects.create(seat_number="A2")
+        out_of_service_seat = Seat.objects.create(
+            seat_number="A3",
+            booking_status=True,
+        )
+        user = get_user_model().objects.create_user(username="sam")
+        Booking.objects.create(
+            movie=movie,
+            seat=booked_seat,
+            user=user,
+        )
+
+        response = self.client.get(f"/api/seats/?movie={movie.id}")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        seats = {seat["seat_number"]: seat for seat in response.json()}
+        self.assertTrue(seats[available_seat.seat_number]["available"])
+        self.assertFalse(seats[booked_seat.seat_number]["available"])
+        self.assertFalse(seats[out_of_service_seat.seat_number]["available"])
+
+    def test_filter_unknown_movie_returns_field_error(self):
+        response = self.client.get("/api/seats/?movie=9999")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.json(),
+            {"movie": ['Invalid pk "9999" - object does not exist.']},
+        )
+
+
 class BookingServiceTests(TestCase):
     def setUp(self):
         Booking.objects.all().delete()
