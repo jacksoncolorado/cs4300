@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
-from rest_framework import status, viewsets
+from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -69,6 +69,16 @@ class SeatViewSet(viewsets.ReadOnlyModelViewSet):
             BookingSerializer(booking).data,
             status=status.HTTP_201_CREATED,
         )
+
+
+class BookingViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """List only the signed-in user's bookings."""
+
+    serializer_class = BookingSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Booking.objects.filter(user=self.request.user)
 
 
 def movie_list(request):

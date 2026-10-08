@@ -8,7 +8,7 @@
 > Codex ticks the box when the task's tests pass. **You** commit.
 
 - [x] **T1** — Add deterministic `Booking` model ordering and its migration · test: `test_booking_default_ordering_newest_date_then_highest_id` · covers: AC-8
-- [ ] **T2** — Add the authenticated booking-list API with user isolation and model ordering · tests: `test_list_bookings_only_returns_own`, `test_booking_api_uses_default_ordering`, `test_anonymous_booking_list_returns_403` · covers: AC-2, AC-6, AC-8
+- [x] **T2** — Add the authenticated booking-list API with user isolation and model ordering · tests: `test_list_bookings_only_returns_own`, `test_booking_api_uses_default_ordering`, `test_anonymous_booking_list_returns_403` · covers: AC-2, AC-6, AC-8
 - [ ] **T3** — Add private booking retrieval and keep update/delete methods unavailable · tests: `test_cannot_retrieve_another_users_booking`, `test_retrieve_own_booking_returns_five_field_shape`, `test_booking_update_and_delete_methods_not_allowed` · covers: AC-3, AC-9
 - [ ] **T4** — Add authenticated booking creation with the shared five-field response and server-owned user · tests: `test_create_booking_returns_five_field_shape`, `test_create_booking_ignores_user_in_request_data`, `test_anonymous_booking_create_returns_403` · covers: AC-6, AC-7
 - [ ] **T5** — Reuse 002 booking failures and validation across the bookings API · tests: `test_taken_seat_returns_matching_detail`, `test_out_of_service_seat_returns_matching_detail`, `test_create_booking_unknown_ids_return_field_errors`, `test_create_booking_missing_fields_return_field_errors`, `test_seat_booked_via_seats_api_refused_via_bookings_api` · covers: AC-7

@@ -252,6 +252,74 @@ class SeatAPITests(APITestCase):
         self.assertFalse(Booking.objects.exists())
 
 
+class BookingAPITests(APITestCase):
+    def setUp(self):
+        Booking.objects.all().delete()
+        Movie.objects.all().delete()
+        Seat.objects.all().delete()
+        self.user = get_user_model().objects.create_user(username="sam")
+        self.other_user = get_user_model().objects.create_user(username="alex")
+
+    def create_booking(self, title, seat_number, user=None):
+        movie = Movie.objects.create(
+            title=title,
+            description=f"Description for {title}.",
+            release_date="2021-10-22",
+            duration=120,
+        )
+        seat = Seat.objects.create(seat_number=seat_number)
+        return Booking.objects.create(
+            movie=movie,
+            seat=seat,
+            user=user or self.user,
+        )
+
+    def test_list_bookings_only_returns_own(self):
+        own_booking = self.create_booking("Dune", "A1")
+        self.create_booking("Up", "A2", user=self.other_user)
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get("/api/bookings/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.json(),
+            [
+                {
+                    "id": own_booking.id,
+                    "movie": own_booking.movie_id,
+                    "seat": own_booking.seat_id,
+                    "user": self.user.id,
+                    "booking_date": own_booking.booking_date.isoformat(),
+                }
+            ],
+        )
+
+    def test_booking_api_uses_default_ordering(self):
+        oldest_booking = self.create_booking("Dune", "A1")
+        same_day_lower_id = self.create_booking("Up", "A2")
+        same_day_higher_id = self.create_booking("Dune: Part Two", "A3")
+        Booking.objects.filter(pk=oldest_booking.pk).update(
+            booking_date=date.today() - timedelta(days=1)
+        )
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get("/api/bookings/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [booking["id"] for booking in response.json()],
+            [same_day_higher_id.id, same_day_lower_id.id, oldest_booking.id],
+        )
+
+    def test_anonymous_booking_list_returns_403(self):
+        self.create_booking("Dune", "A1")
+
+        response = self.client.get("/api/bookings/")
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
 class BookingServiceTests(TestCase):
     def setUp(self):
         Booking.objects.all().delete()
