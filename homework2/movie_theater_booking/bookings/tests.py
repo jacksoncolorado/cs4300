@@ -198,6 +198,55 @@ class SeatAPITests(APITestCase):
         )
         self.assertFalse(Booking.objects.exists())
 
+    def test_duplicate_booking_returns_error_not_500(self):
+        movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+        seat = Seat.objects.create(seat_number="A1")
+        user = get_user_model().objects.create_user(username="sam")
+        Booking.objects.create(movie=movie, seat=seat, user=user)
+        self.client.force_authenticate(user=user)
+
+        response = self.client.post(
+            "/api/seats/book/",
+            {"movie": movie.id, "seat": seat.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.json(),
+            {"detail": "Seat A1 is already booked for Dune."},
+        )
+        self.assertEqual(Booking.objects.count(), 1)
+
+    def test_out_of_service_seat_api_returns_detail_400(self):
+        movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+        seat = Seat.objects.create(seat_number="A3", booking_status=True)
+        user = get_user_model().objects.create_user(username="sam")
+        self.client.force_authenticate(user=user)
+
+        response = self.client.post(
+            "/api/seats/book/",
+            {"movie": movie.id, "seat": seat.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.json(),
+            {"detail": "Seat A3 is out of service."},
+        )
+        self.assertFalse(Booking.objects.exists())
+
 
 class BookingServiceTests(TestCase):
     def setUp(self):

@@ -12,7 +12,7 @@ from .serializers import (
     SeatMovieFilterSerializer,
     SeatSerializer,
 )
-from .services import book_seat
+from .services import SeatBookingError, book_seat
 
 
 class MovieViewSet(viewsets.ModelViewSet):
@@ -52,11 +52,17 @@ class SeatViewSet(viewsets.ReadOnlyModelViewSet):
     def book(self, request):
         booking_input = SeatBookingInputSerializer(data=request.data)
         booking_input.is_valid(raise_exception=True)
-        booking = book_seat(
-            request.user,
-            booking_input.validated_data["movie"],
-            booking_input.validated_data["seat"],
-        )
+        try:
+            booking = book_seat(
+                request.user,
+                booking_input.validated_data["movie"],
+                booking_input.validated_data["seat"],
+            )
+        except SeatBookingError as error:
+            return Response(
+                {"detail": str(error)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response(
             BookingSerializer(booking).data,
             status=status.HTTP_201_CREATED,
