@@ -1,11 +1,11 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from .models import Movie, Seat
+from .models import Booking, Movie, Seat
 from .serializers import (
     BookingSerializer,
     MovieSerializer,
@@ -84,4 +84,19 @@ def movie_list(request):
 def book_seat_view(request, movie_id):
     """Render the authenticated seat-booking page."""
 
-    return render(request, "bookings/seat_booking.html")
+    movie = get_object_or_404(Movie, pk=movie_id)
+    booked_seat_ids = set(
+        Booking.objects.filter(movie=movie).values_list("seat_id", flat=True)
+    )
+    seat_options = [
+        {
+            "seat": seat,
+            "available": not seat.booking_status and seat.id not in booked_seat_ids,
+        }
+        for seat in Seat.objects.all()
+    ]
+    return render(
+        request,
+        "bookings/seat_booking.html",
+        {"movie": movie, "seat_options": seat_options},
+    )

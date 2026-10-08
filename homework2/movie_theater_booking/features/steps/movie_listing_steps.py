@@ -41,9 +41,9 @@ def open_movie_list(context):
     context.response = context.test.client.get("/")
 
 
-@then('I see both movies with their descriptions and disabled "Book Now" buttons')
+@then('I see both movies with their descriptions and "Book Now" links')
 def see_movies_with_booking_buttons(context):
-    """Check that each movie has its details and disabled booking control."""
+    """Check that each movie has its details and movie-specific booking link."""
 
     assert context.response.status_code == 200
     page = BeautifulSoup(context.response.content, "html.parser")
@@ -56,9 +56,9 @@ def see_movies_with_booking_buttons(context):
         )
         card_text = card.get_text(" ", strip=True)
         assert movie.description in card_text
-        button = card.find("button", string="Book Now")
-        assert button is not None
-        assert button.has_attr("disabled")
+        link = card.find("a", string="Book Now")
+        assert link is not None
+        assert link["href"] == f"/movies/{movie.id}/seats/"
 
 
 @then('I see "{message}" instead of a movie list')

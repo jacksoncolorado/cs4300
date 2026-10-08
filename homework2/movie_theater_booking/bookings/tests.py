@@ -597,11 +597,7 @@ class MovieViewTests(TestCase):
         self.assertTemplateUsed(response, "bookings/base.html")
         self.assertContains(response, "cdn.jsdelivr.net/npm/bootstrap")
         self.assertContains(response, '<a class="navbar-brand" href="/">Movies</a>')
-        self.assertContains(
-            response,
-            '<button class="btn btn-primary" disabled>Book Now</button>',
-            html=True,
-        )
+        self.assertContains(response, "Book Now")
 
     def test_movie_list_shows_release_date_and_duration(self):
         Movie.objects.create(
@@ -621,6 +617,71 @@ class MovieViewTests(TestCase):
 
         self.assertContains(response, "No movies are showing right now")
         self.assertNotContains(response, "Book Now")
+
+    def test_movie_list_book_now_links_to_seat_page(self):
+        movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+
+        response = self.client.get("/")
+
+        self.assertContains(
+            response,
+            f'<a class="btn btn-primary" href="/movies/{movie.id}/seats/">'
+            "Book Now</a>",
+            html=True,
+        )
+
+
+class SeatBookingViewTests(TestCase):
+    def setUp(self):
+        Booking.objects.all().delete()
+        Movie.objects.all().delete()
+        Seat.objects.all().delete()
+        self.movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+        self.user = get_user_model().objects.create_user(username="sam")
+        self.client.force_login(self.user)
+
+    def test_seat_page_shows_per_movie_availability(self):
+        available_seat = Seat.objects.create(seat_number="A1")
+        booked_seat = Seat.objects.create(seat_number="A2")
+        Booking.objects.create(
+            movie=self.movie,
+            seat=booked_seat,
+            user=self.user,
+        )
+
+        response = self.client.get(f"/movies/{self.movie.id}/seats/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Dune")
+        availability = {
+            option["seat"].seat_number: option["available"]
+            for option in response.context["seat_options"]
+        }
+        self.assertEqual(
+            availability,
+            {available_seat.seat_number: True, booked_seat.seat_number: False},
+        )
+        self.assertContains(response, "Available")
+        self.assertContains(response, "Unavailable")
+
+    def test_seat_booking_uses_base_template(self):
+        Seat.objects.create(seat_number="A1")
+
+        response = self.client.get(f"/movies/{self.movie.id}/seats/")
+
+        self.assertTemplateUsed(response, "bookings/seat_booking.html")
+        self.assertTemplateUsed(response, "bookings/base.html")
+        self.assertContains(response, "cdn.jsdelivr.net/npm/bootstrap")
 
 
 class AuthenticationViewTests(TestCase):

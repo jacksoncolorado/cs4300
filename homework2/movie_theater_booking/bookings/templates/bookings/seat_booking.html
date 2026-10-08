@@ -1,0 +1,31 @@
+{% extends "bookings/base.html" %}
+
+{% block title %}Seats for {{ movie.title }} | Movie Theater Booking{% endblock %}
+
+{% block content %}
+<h1>Seats for {{ movie.title }}</h1>
+<div class="row g-3">
+    {% for option in seat_options %}
+        <div class="col-sm-6 col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h5">Seat {{ option.seat.seat_number }}</h2>
+                    {% if option.available %}
+                        <p class="text-success">Available</p>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="seat" value="{{ option.seat.id }}">
+                            <button class="btn btn-primary" type="submit">Book seat</button>
+                        </form>
+                    {% else %}
+                        <p class="text-danger">Unavailable</p>
+                        <button class="btn btn-secondary" type="button" disabled>Unavailable</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <p>No seats are configured.</p>
+    {% endfor %}
+</div>
+{% endblock %}
