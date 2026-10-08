@@ -1230,6 +1230,83 @@ class BookingHistoryViewTests(TestCase):
             "/accounts/login/?next=/bookings/",
         )
 
+    def test_booking_history_page_only_shows_own(self):
+        own_booking = Booking.objects.create(
+            movie=self.movie,
+            seat=self.seat,
+            user=self.user,
+        )
+        other_user = get_user_model().objects.create_user(username="alex")
+        other_movie = Movie.objects.create(
+            title="Up",
+            description="A widower travels to South America in his house.",
+            release_date="2009-05-29",
+            duration=96,
+        )
+        other_seat = Seat.objects.create(seat_number="A2")
+        Booking.objects.create(
+            movie=other_movie,
+            seat=other_seat,
+            user=other_user,
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get("/bookings/")
+
+        self.assertContains(response, own_booking.movie.title)
+        self.assertNotContains(response, other_movie.title)
+        self.assertEqual(list(response.context["bookings"]), [own_booking])
+
+    def test_booking_history_empty_state(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get("/bookings/")
+
+        self.assertContains(response, "You have no bookings yet.")
+        self.assertNotContains(response, '<article class="list-group-item">')
+
+    def test_booking_history_page_uses_default_ordering(self):
+        oldest_booking = Booking.objects.create(
+            movie=self.movie,
+            seat=self.seat,
+            user=self.user,
+        )
+        second_movie = Movie.objects.create(
+            title="Up",
+            description="A widower travels to South America in his house.",
+            release_date="2009-05-29",
+            duration=96,
+        )
+        second_seat = Seat.objects.create(seat_number="A2")
+        same_day_lower_id = Booking.objects.create(
+            movie=second_movie,
+            seat=second_seat,
+            user=self.user,
+        )
+        third_movie = Movie.objects.create(
+            title="Dune: Part Two",
+            description="Paul Atreides unites with Chani and the Fremen.",
+            release_date="2024-03-01",
+            duration=166,
+        )
+        third_seat = Seat.objects.create(seat_number="A3")
+        same_day_higher_id = Booking.objects.create(
+            movie=third_movie,
+            seat=third_seat,
+            user=self.user,
+        )
+        Booking.objects.filter(pk=oldest_booking.pk).update(
+            booking_date=date.today() - timedelta(days=1)
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get("/bookings/")
+
+        self.assertEqual(
+            list(response.context["bookings"]),
+            [same_day_higher_id, same_day_lower_id, oldest_booking],
+        )
+
 
 class AuthenticationViewTests(TestCase):
     def test_anonymous_seat_page_redirects_to_login(self):

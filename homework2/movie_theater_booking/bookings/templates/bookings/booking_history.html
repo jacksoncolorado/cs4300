@@ -13,6 +13,8 @@
                 <strong>Booking date:</strong> {{ booking.booking_date|date:"F j, Y" }}
             </p>
         </article>
+    {% empty %}
+        <p class="alert alert-info">You have no bookings yet.</p>
     {% endfor %}
 </div>
 {% endblock %}
