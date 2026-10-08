@@ -713,6 +713,47 @@ class SeatBookingViewTests(TestCase):
         }
         self.assertFalse(availability[seat.seat_number])
 
+    def test_taken_seat_page_shows_exact_error_and_back_link(self):
+        seat = Seat.objects.create(seat_number="A2")
+        Booking.objects.create(movie=self.movie, seat=seat, user=self.user)
+
+        response = self.client.post(
+            f"/movies/{self.movie.id}/seats/",
+            {"seat": seat.id},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Seat A2 is already booked for Dune.")
+        self.assertContains(
+            response,
+            f'<a href="/movies/{self.movie.id}/seats/">Back to seats</a>',
+            html=True,
+        )
+        self.assertEqual(Booking.objects.count(), 1)
+
+    def test_out_of_service_seat_unavailable_for_every_movie(self):
+        other_movie = Movie.objects.create(
+            title="Up",
+            description="A widower travels to South America in his house.",
+            release_date="2009-05-29",
+            duration=96,
+        )
+        seat = Seat.objects.create(seat_number="A3", booking_status=True)
+
+        responses = (
+            self.client.get(f"/movies/{self.movie.id}/seats/"),
+            self.client.get(f"/movies/{other_movie.id}/seats/"),
+        )
+
+        for response in responses:
+            with self.subTest(movie=response.context["movie"].title):
+                availability = {
+                    option["seat"].seat_number: option["available"]
+                    for option in response.context["seat_options"]
+                }
+                self.assertFalse(availability[seat.seat_number])
+        self.assertFalse(Booking.objects.exists())
+
 
 class AuthenticationViewTests(TestCase):
     def test_anonymous_seat_page_redirects_to_login(self):

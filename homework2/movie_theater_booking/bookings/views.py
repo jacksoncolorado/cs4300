@@ -86,14 +86,19 @@ def book_seat_view(request, movie_id):
     """Render the authenticated seat-booking page."""
 
     movie = get_object_or_404(Movie, pk=movie_id)
+    booking_error = None
     if request.method == "POST":
         seat = get_object_or_404(Seat, pk=request.POST.get("seat"))
-        book_seat(request.user, movie, seat)
-        messages.success(
-            request,
-            f"Seat {seat.seat_number} booked for {movie.title}.",
-        )
-        return redirect("book_seat", movie_id=movie.id)
+        try:
+            book_seat(request.user, movie, seat)
+        except SeatBookingError as error:
+            booking_error = str(error)
+        else:
+            messages.success(
+                request,
+                f"Seat {seat.seat_number} booked for {movie.title}.",
+            )
+            return redirect("book_seat", movie_id=movie.id)
 
     booked_seat_ids = set(
         Booking.objects.filter(movie=movie).values_list("seat_id", flat=True)
@@ -108,5 +113,9 @@ def book_seat_view(request, movie_id):
     return render(
         request,
         "bookings/seat_booking.html",
-        {"movie": movie, "seat_options": seat_options},
+        {
+            "movie": movie,
+            "seat_options": seat_options,
+            "booking_error": booking_error,
+        },
     )

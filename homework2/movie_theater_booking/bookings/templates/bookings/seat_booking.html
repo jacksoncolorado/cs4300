@@ -4,6 +4,12 @@
 
 {% block content %}
 <h1>Seats for {{ movie.title }}</h1>
+{% if booking_error %}
+    <div class="alert alert-danger" role="alert">
+        <p>{{ booking_error }}</p>
+        <a href="{% url 'book_seat' movie.id %}">Back to seats</a>
+    </div>
+{% endif %}
 <div class="row g-3">
     {% for option in seat_options %}
         <div class="col-sm-6 col-md-4">
