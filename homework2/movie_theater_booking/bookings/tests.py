@@ -134,6 +134,70 @@ class SeatAPITests(APITestCase):
             },
         )
 
+    def test_booking_user_is_request_user_not_request_data(self):
+        movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+        seat = Seat.objects.create(seat_number="A1")
+        signed_in_user = get_user_model().objects.create_user(username="sam")
+        supplied_user = get_user_model().objects.create_user(username="alex")
+        self.client.force_authenticate(user=signed_in_user)
+
+        response = self.client.post(
+            "/api/seats/book/",
+            {"movie": movie.id, "seat": seat.id, "user": supplied_user.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        booking = Booking.objects.get()
+        self.assertEqual(booking.user, signed_in_user)
+        self.assertEqual(response.json()["user"], signed_in_user.id)
+
+    def test_booking_unknown_movie_returns_field_error(self):
+        seat = Seat.objects.create(seat_number="A1")
+        user = get_user_model().objects.create_user(username="sam")
+        self.client.force_authenticate(user=user)
+
+        response = self.client.post(
+            "/api/seats/book/",
+            {"movie": 9999, "seat": seat.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.json(),
+            {"movie": ['Invalid pk "9999" - object does not exist.']},
+        )
+        self.assertFalse(Booking.objects.exists())
+
+    def test_booking_unknown_seat_returns_field_error(self):
+        movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+        user = get_user_model().objects.create_user(username="sam")
+        self.client.force_authenticate(user=user)
+
+        response = self.client.post(
+            "/api/seats/book/",
+            {"movie": movie.id, "seat": 9999},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.json(),
+            {"seat": ['Invalid pk "9999" - object does not exist.']},
+        )
+        self.assertFalse(Booking.objects.exists())
+
 
 class BookingServiceTests(TestCase):
     def setUp(self):
