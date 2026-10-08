@@ -683,6 +683,36 @@ class SeatBookingViewTests(TestCase):
         self.assertTemplateUsed(response, "bookings/base.html")
         self.assertContains(response, "cdn.jsdelivr.net/npm/bootstrap")
 
+    def test_missing_movie_page_404(self):
+        response = self.client.get("/movies/9999/seats/")
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_book_available_seat_from_page(self):
+        seat = Seat.objects.create(seat_number="A1")
+
+        response = self.client.post(
+            f"/movies/{self.movie.id}/seats/",
+            {"seat": seat.id},
+            follow=True,
+        )
+
+        self.assertRedirects(
+            response,
+            f"/movies/{self.movie.id}/seats/",
+        )
+        booking = Booking.objects.get()
+        self.assertEqual(booking.user, self.user)
+        self.assertEqual(booking.movie, self.movie)
+        self.assertEqual(booking.seat, seat)
+        self.assertEqual(booking.booking_date, date.today())
+        self.assertContains(response, "Seat A1 booked for Dune.")
+        availability = {
+            option["seat"].seat_number: option["available"]
+            for option in response.context["seat_options"]
+        }
+        self.assertFalse(availability[seat.seat_number])
+
 
 class AuthenticationViewTests(TestCase):
     def test_anonymous_seat_page_redirects_to_login(self):

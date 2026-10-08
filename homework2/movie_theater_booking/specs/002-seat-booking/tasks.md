@@ -15,7 +15,7 @@
 - [x] **T7** — Booking API translates taken/out-of-service failures into exact 400 responses · tests: `test_duplicate_booking_returns_error_not_500`, `test_out_of_service_seat_api_returns_detail_400` · covers: AC-3, AC-4, AC-12
 - [x] **T8** — Django auth URLs, login redirect, `LOGIN_REDIRECT_URL` and shared login template · tests: `test_anonymous_seat_page_redirects_to_login`, `test_login_uses_base_template` · covers: AC-8
 - [x] **T9** — Movie link and seat page show per-movie availability using the shared layout · tests: `test_movie_list_book_now_links_to_seat_page`, `test_seat_page_shows_per_movie_availability`, `test_seat_booking_uses_base_template` · covers: AC-1, AC-7, AC-12
-- [ ] **T10** — Seat page 404 plus successful signed-in page booking and exact success message · tests: `test_missing_movie_page_404`, `test_book_available_seat_from_page` · covers: AC-2, AC-5, AC-9
+- [x] **T10** — Seat page 404 plus successful signed-in page booking and exact success message · tests: `test_missing_movie_page_404`, `test_book_available_seat_from_page` · covers: AC-2, AC-5, AC-9
 - [ ] **T11** — Seat page shows exact taken/out-of-service states and the movie-specific back link · tests: `test_taken_seat_page_shows_exact_error_and_back_link`, `test_out_of_service_seat_unavailable_for_every_movie` · covers: AC-3, AC-12
 - [ ] **T12** — Page and API enforce the same booking rules in both directions · tests: `test_seat_booked_via_page_refused_via_seats_api`, `test_seat_booked_via_seats_api_refused_via_page` · covers: AC-6
 - [ ] **T13** — Idempotent `seed_demo_user` command and Render build invocation · tests: `test_seed_demo_user_requires_password`, `test_seed_demo_user_is_idempotent_and_updates_password` · covers: AC-13

@@ -1,5 +1,6 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -85,6 +86,15 @@ def book_seat_view(request, movie_id):
     """Render the authenticated seat-booking page."""
 
     movie = get_object_or_404(Movie, pk=movie_id)
+    if request.method == "POST":
+        seat = get_object_or_404(Seat, pk=request.POST.get("seat"))
+        book_seat(request.user, movie, seat)
+        messages.success(
+            request,
+            f"Seat {seat.seat_number} booked for {movie.title}.",
+        )
+        return redirect("book_seat", movie_id=movie.id)
+
     booked_seat_ids = set(
         Booking.objects.filter(movie=movie).values_list("seat_id", flat=True)
     )
