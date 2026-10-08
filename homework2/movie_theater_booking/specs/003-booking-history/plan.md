@@ -20,7 +20,11 @@ another user's booking.
 ## 2. Data model
 | Model | Field / option | Type | Constraints | Spec ref |
 |---|---|---|---|---|
-| Booking | existing fields | unchanged | `movie`, `seat`, `user`, `booking_date` remain as built in 002 | AC-1–AC-3, AC-7 |
+| Booking | `movie` | existing `ForeignKey(Movie)` | required; returned as the movie id | AC-1, AC-2, AC-3, AC-7 |
+| Booking | `seat` | existing `ForeignKey(Seat)` | required; returned as the seat id | AC-1, AC-2, AC-3, AC-7 |
+| Booking | `user` | existing `ForeignKey(settings.AUTH_USER_MODEL)` | required; always set from `request.user`; returned as the user id | AC-2, AC-3, AC-7 |
+| Booking | `booking_date` | existing `DateField(auto_now_add=True)` | required; API uses ISO date and page uses `F j, Y` | AC-1, AC-3, AC-7, AC-8 |
+| Booking | existing unique constraint | `UniqueConstraint` | unique fields `("movie", "seat")`; retained from 002 | AC-7 |
 | Booking | `Meta.ordering` | tuple | `("-booking_date", "-id")` | AC-8 |
 
 Create one schema-state migration for the `Booking` ordering option. It does not alter stored rows, but
@@ -38,6 +42,8 @@ keeps Django's migration state synchronized with the model.
 Implement `BookingViewSet` with `CreateModelMixin`, `ListModelMixin`, `RetrieveModelMixin` and
 `GenericViewSet`, plus `IsAuthenticated`. `get_queryset()` returns
 `Booking.objects.filter(user=request.user)`; model ordering supplies `("-booking_date", "-id")`.
+Register it with `basename="booking"`, because deliberately omitting a global `queryset` prevents the
+router from deriving a basename and avoids presenting the unfiltered table as the viewset's default.
 
 ## 4. Files to create / change
 | File | Change |
@@ -45,7 +51,7 @@ Implement `BookingViewSet` with `CreateModelMixin`, `ListModelMixin`, `RetrieveM
 | `bookings/models.py` | Add `Booking.Meta.ordering = ("-booking_date", "-id")` alongside the existing uniqueness constraint |
 | `bookings/migrations/0006_alter_booking_options.py` | Record the Booking ordering option |
 | `bookings/views.py` | Add the authenticated, restricted `BookingViewSet` and login-required booking-history page |
-| `bookings/urls.py` | Register `BookingViewSet` at `/api/bookings/` and add the named `/bookings/` page route |
+| `bookings/urls.py` | Register `BookingViewSet` at `/api/bookings/` with `basename="booking"` and add the named `/bookings/` page route |
 | `bookings/templates/bookings/base.html` | Show My Bookings in the navbar only when `user.is_authenticated` |
 | `bookings/templates/bookings/booking_history.html` | Extend `base.html`; show movie, seat and `F j, Y` booking date, or the exact empty state |
 | `bookings/tests.py` | Add model-ordering, API privacy/creation/error/method, and page tests |
@@ -61,11 +67,11 @@ No new serializer is needed: `SeatBookingInputSerializer` validates create input
 | AC-1 | view + Behave | `test_booking_history_shows_movie_seat_and_formatted_date`; scenario “View my booking history” |
 | AC-2 | API + view + Behave | `test_list_bookings_only_returns_own`, `test_booking_history_page_only_shows_own`; scenario “Only my bookings are shown” |
 | AC-3 | API | `test_cannot_retrieve_another_users_booking`, `test_retrieve_own_booking_returns_five_field_shape` |
-| AC-4 | view | `test_booking_history_uses_base_template`, `test_navbar_shows_my_bookings_only_when_authenticated` |
+| AC-4 | view + Behave | `test_booking_history_uses_base_template`, `test_navbar_shows_my_bookings_only_when_authenticated`; scenario “Authenticated booking navigation” |
 | AC-5 | view + Behave | `test_booking_history_empty_state`; scenario “No booking history yet” |
 | AC-6 | view + API + Behave | `test_anonymous_booking_history_redirects_to_login`, `test_anonymous_booking_list_returns_403`, `test_anonymous_booking_create_returns_403`; scenario “Sign in to view booking history” |
 | AC-7 | API integration | `test_create_booking_returns_five_field_shape`, `test_create_booking_ignores_user_in_request_data`, `test_taken_seat_returns_matching_detail`, `test_out_of_service_seat_returns_matching_detail`, `test_create_booking_unknown_ids_return_field_errors`, `test_create_booking_missing_fields_return_field_errors`, `test_seat_booked_via_seats_api_refused_via_bookings_api` |
-| AC-8 | model + API + view | `test_booking_default_ordering_newest_date_then_highest_id`, `test_booking_api_uses_default_ordering`, `test_booking_history_page_uses_default_ordering` |
+| AC-8 | model + API + view + Behave | `test_booking_default_ordering_newest_date_then_highest_id`, `test_booking_api_uses_default_ordering`, `test_booking_history_page_uses_default_ordering`; scenario “Newest bookings appear first” |
 | AC-9 | API | `test_booking_update_and_delete_methods_not_allowed` |
 
 Run `python manage.py test`, `python manage.py behave`, and
@@ -81,6 +87,6 @@ at least 80%.
 - **Service errors cross an API boundary.** Catch only `SeatBookingError` and translate it to the same
   400 `detail` response used by `SeatViewSet`; let DRF produce its standard input-field errors.
 - **Ordering by date needs an id tie-breaker.** `booking_date` cannot distinguish bookings created on
-  the same day, so descending id makes both UI and API deterministic.
-- **Query count is secondary to privacy and clarity.** The history view can use `select_related("movie", "seat")`
-  to avoid per-row lookups without changing the required user filter or ordering.
+  the same day, so descending id makes both UI and API deterministic. Tests for different dates will
+  create bookings normally, then use a direct queryset update to arrange historical dates because
+  `auto_now_add=True` intentionally ignores caller-supplied dates on creation.
