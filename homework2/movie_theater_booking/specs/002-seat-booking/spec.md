@@ -20,6 +20,7 @@ A moviegoer who has picked a movie needs to see which seats are free and reserve
 - Given the movie "Dune" and seats A1–A5, where A2 is already booked
 - When I click "Book Now" for Dune
 - Then I see the seat booking page for Dune, with A2 shown as unavailable and the others as available
+- The page uses `GET /movies/<movie_id>/seats/`, named `book_seat`.
 - (This is where "Book Now" on the movie list, disabled in 001, becomes a real link.)
 
 **AC-2 (US-2): Book an available seat**
@@ -28,11 +29,17 @@ A moviegoer who has picked a movie needs to see which seats are free and reserve
 - Then a Booking is created for me, that movie and that seat, with today's date
 - And I am returned to the seat page for Dune with a success message
 - And A1 now shows as unavailable
+- The form posts to the page's own URL: `POST /movies/<movie_id>/seats/`.
+- The page success message is `Seat A1 booked for Dune.`, using the selected seat number and movie title.
+- A successful `POST /api/seats/book/` returns 201 with the created booking's `id`, `movie`, `seat`,
+  `user` and `booking_date`; `user` is the signed-in user's id.
 
 **AC-3 (US-2): Seat already taken**
 - Given seat A2 is already booked for Dune
 - When I try to book A2
-- Then the API returns 400 with a message naming the seat and the movie, the page re-renders with that message and a link back, and no second booking is created
+- Then the API returns 400 with `{"detail": "Seat A2 is already booked for Dune."}`, the page
+  re-renders with the same message and a link back, and no second booking is created
+- The link back points to `GET /movies/<movie_id>/seats/` for that movie.
 
 **AC-4 (US-2): No double booking, even at the same moment**
 - Given seat A1 is available for Dune
@@ -48,6 +55,7 @@ A moviegoer who has picked a movie needs to see which seats are free and reserve
 - Given I am signed in as Sam
 - When I book a seat through the page or the API, even if the request data names another user
 - Then the booking's user is Sam
+- A client-supplied `user` value is ignored; it never changes the booking owner.
 - 📖 **Book:** [§11.2.1 A01: Broken Access Control](https://www.swebook.org/chapters/11-software-security/index.html#1121-a01-broken-access-control)
 
 **AC-6 (US-2, US-3): Same rules everywhere**
@@ -65,41 +73,59 @@ A moviegoer who has picked a movie needs to see which seats are free and reserve
 - Given I am not signed in
 - When I open the seat booking page, I am redirected to the login page
 - And when I POST a booking to the API, I get 403 and no booking is created
+- Django's built-in authentication URLs live under `/accounts/`; the login template is
+  `bookings/templates/registration/login.html`, it extends `base.html`, and a successful login
+  redirects to `/` by default.
 
 **AC-9: Seat or movie does not exist**
 - Given no movie with id 9999 and no seat with id 9999 exist
 - When I open the seat page for movie 9999, I get 404
 - And when I POST to /api/seats/book/ naming either id, I get 400 with a field error for that id
+- Unknown IDs use DRF's default related-field errors, for example
+  `{"seat": ["Invalid pk \"9999\" - object does not exist."]}`.
+- `GET /api/seats/?movie=9999` returns 400 with
+  `{"movie": ["Invalid pk \"9999\" - object does not exist."]}` rather than using the
+  no-movie response shape.
 
 **AC-10 (US-3): List seats via API**
 - Given seats A1-A5 exist
 - When a client sends GET /api/seats/ with no movie
 - Then the response is 200 with every seat's id, seat number and booking status
+- The computed `available` field is absent when no movie is supplied.
 - (No movie means no availability answer, since availability only exists per (movie, seat). `booking_status` here is the out-of-service flag, not "booked". AC-11 is the per-movie view.)
 
 **AC-11 (US-3): Seat availability for a movie via API**
 - Given seats A1-A5 exist and A2 is booked for Dune
 - When a client sends GET /api/seats/?movie=<Dune's id>
-- Then the response is 200, A2 is marked unavailable, and the rest are available
+- Then the response is 200 and each seat includes a computed boolean field named `available`;
+  A2 has `available: false` and the rest have `available: true`
 
 **AC-12 (US-2): Out-of-service seat**
 - Given seat A3 has booking_status set to out of service
 - When I try to book A3 for any movie
-- Then the API returns 400 saying the seat is out of service, no booking is created, and the page
+- Then the API returns 400 with `{"detail": "Seat A3 is out of service."}`, no booking is created, and the page
   shows A3 as unavailable for every movie
+
+**AC-13: Seed the grader's demo user**
+- Given `DEMO_PASSWORD` is set in the environment
+- When `python manage.py seed_demo_user` runs one or more times
+- Then one user named `demo` exists and its password is updated to the environment value
 
 ## 4. Data
 | Thing | Information | Rules |
 |---|---|---|
-| Seat | seat number, booking status | Seat number is required and unique, format letter + number (A1-A5). `booking_status` means the seat is out of service entirely, not booked for a movie. |
-| Booking | movie, seat, user, booking date | User is always the signed-in user (AC-5). A UniqueConstraint on (movie, seat) makes the database refuse a duplicate (AC-4). "The same seat" means the same seat for the same movie. |
+| Seat | seat number, booking status | `seat_number` is required and unique, and matches one uppercase letter followed by one or more digits. A1–A5 are seeded examples, not the only valid values. `booking_status` is `BooleanField(default=False)`; `True` means the seat is out of service entirely, not booked for a movie. |
+| Booking | movie, seat, user, booking date | `booking_date` is `DateField(auto_now_add=True)`. User is always the signed-in user (AC-5). A UniqueConstraint on (movie, seat) makes the database refuse a duplicate (AC-4). "The same seat" means the same seat for the same movie. |
 
 ## 5. API / UI behavior
 | Action | Input | Success result | Failure result |
 |---|---|---|---|
-| View seats for a movie (page) | movie id | 200, every seat shown available or unavailable for that movie | 404 if the movie does not exist; redirect to login if not signed in |
-| List seats (API) | optional `movie` query param | 200, seats with availability for that movie when given | — |
-| Book a seat (API + page) | `POST /api/seats/book/` with `{movie, seat}` in the body; user comes from the session | 201 from the API, redirect with a success message from the page | 400 if the seat is taken, out of service, missing or unknown; 403 if not signed in |
+| View seats for a movie (page) | `GET /movies/<movie_id>/seats/` | 200, every seat shown available or unavailable for that movie | 404 if the movie does not exist; redirect to `/accounts/login/` if not signed in |
+| Book a seat (page) | `POST /movies/<movie_id>/seats/` with the seat id; user comes from the session | redirect to the same seat page with `Seat <seat> booked for <movie>.` | re-render with the AC-3 or AC-12 message and a link to that movie's seat page; redirect to login if not signed in |
+| List seats (API) | `GET /api/seats/` with optional `movie` query param | Public 200; includes per-movie `available` only when a valid movie is supplied | 400 with a `movie` field error when the supplied movie id is unknown |
+| List movies (API) | `GET /api/movies/` | Public 200 | — |
+| Book a seat (API) | `POST /api/seats/book/` with `{movie, seat}`; any `user` input is ignored | Authenticated 201 with `{id, movie, seat, user, booking_date}` | 400 with `detail` for taken/out-of-service; DRF field errors for missing/unknown ids; 403 if not signed in |
+| Seed demo user (deployment) | `python manage.py seed_demo_user`; password from `DEMO_PASSWORD` | exactly one `demo` user exists with the supplied password | command error if `DEMO_PASSWORD` is absent |
 
 ## 6. Out of scope
 - Payments, seat maps with rows and aisles, holding a seat temporarily
@@ -111,4 +137,7 @@ A moviegoer who has picked a movie needs to see which seats are free and reserve
 - [x] **One source of truth.** Availability is worked out from Booking each time, never stored. A seat is taken for a movie when a Booking exists for that (movie, seat), so there is nothing to keep in step and the two can never disagree. Seat's `booking_status` keeps the field the assignment requires and means out of service. AC-4 and AC-6 would catch a disagreement.
 - [x] **Where booking lives.** One function, `book_seat(user, movie, seat)` in `bookings/services.py`. The page view, SeatViewSet and (in 003) BookingViewSet all call it. Copying the rules into each would let them drift apart and break AC-6.
 - [x] **Cancelling:** out of scope, not in the assignment.
-- [x] **Grader access:** the seed migration creates a demo user whose password comes from the `DEMO_PASSWORD` environment variable. The password is never committed; it is given in the Canvas submission comment, so the repo stays clean even though it is public.
+- [x] **Grader access:** an idempotent `seed_demo_user` management command creates or updates the
+      `demo` user using the `DEMO_PASSWORD` environment variable. Render's build command runs it after
+      migrations. The password is never committed; it is given in the Canvas submission comment, so
+      the repo stays clean even though it is public.
