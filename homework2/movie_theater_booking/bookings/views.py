@@ -1,10 +1,18 @@
 from django.shortcuts import render
-from rest_framework.permissions import AllowAny
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import viewsets
 
 from .models import Movie, Seat
-from .serializers import MovieSerializer, SeatMovieFilterSerializer, SeatSerializer
+from .serializers import (
+    BookingSerializer,
+    MovieSerializer,
+    SeatBookingInputSerializer,
+    SeatMovieFilterSerializer,
+    SeatSerializer,
+)
+from .services import book_seat
 
 
 class MovieViewSet(viewsets.ModelViewSet):
@@ -21,6 +29,11 @@ class SeatViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = SeatSerializer
     permission_classes = [AllowAny]
 
+    def get_permissions(self):
+        if self.action == "book":
+            return [IsAuthenticated()]
+        return super().get_permissions()
+
     def list(self, request, *args, **kwargs):
         movie_filter = SeatMovieFilterSerializer(data=request.query_params)
         movie_filter.is_valid(raise_exception=True)
@@ -34,6 +47,20 @@ class SeatViewSet(viewsets.ReadOnlyModelViewSet):
             context=context,
         )
         return Response(serializer.data)
+
+    @action(detail=False, methods=["post"], url_path="book")
+    def book(self, request):
+        booking_input = SeatBookingInputSerializer(data=request.data)
+        booking_input.is_valid(raise_exception=True)
+        booking = book_seat(
+            request.user,
+            booking_input.validated_data["movie"],
+            booking_input.validated_data["seat"],
+        )
+        return Response(
+            BookingSerializer(booking).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 def movie_list(request):

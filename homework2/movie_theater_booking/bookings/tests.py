@@ -86,6 +86,54 @@ class SeatAPITests(APITestCase):
             {"movie": ['Invalid pk "9999" - object does not exist.']},
         )
 
+    def test_anonymous_api_booking_403(self):
+        movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+        seat = Seat.objects.create(seat_number="A1")
+
+        response = self.client.post(
+            "/api/seats/book/",
+            {"movie": movie.id, "seat": seat.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertFalse(Booking.objects.exists())
+
+    def test_book_available_seat_api_returns_created_booking(self):
+        movie = Movie.objects.create(
+            title="Dune",
+            description="A noble family becomes embroiled in a war.",
+            release_date="2021-10-22",
+            duration=155,
+        )
+        seat = Seat.objects.create(seat_number="A1")
+        user = get_user_model().objects.create_user(username="sam")
+        self.client.force_authenticate(user=user)
+
+        response = self.client.post(
+            "/api/seats/book/",
+            {"movie": movie.id, "seat": seat.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        booking = Booking.objects.get()
+        self.assertEqual(
+            response.json(),
+            {
+                "id": booking.id,
+                "movie": movie.id,
+                "seat": seat.id,
+                "user": user.id,
+                "booking_date": date.today().isoformat(),
+            },
+        )
+
 
 class BookingServiceTests(TestCase):
     def setUp(self):

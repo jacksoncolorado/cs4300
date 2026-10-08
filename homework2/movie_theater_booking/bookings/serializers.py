@@ -41,3 +41,19 @@ class SeatSerializer(serializers.ModelSerializer):
             movie=movie,
             seat=seat,
         ).exists()
+
+
+class SeatBookingInputSerializer(serializers.Serializer):
+    """Validate the movie and seat selected for a booking."""
+
+    movie = serializers.PrimaryKeyRelatedField(queryset=Movie.objects.all())
+    seat = serializers.PrimaryKeyRelatedField(queryset=Seat.objects.all())
+
+
+class BookingSerializer(serializers.ModelSerializer):
+    """Return a created booking without accepting ownership from clients."""
+
+    class Meta:
+        model = Booking
+        fields = ["id", "movie", "seat", "user", "booking_date"]
+        read_only_fields = fields
